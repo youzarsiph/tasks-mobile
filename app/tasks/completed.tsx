@@ -1,5 +1,5 @@
 /**
- * Tasks Screen
+ * Completed Tasks Screen
  */
 
 import React from "react";
@@ -15,7 +15,7 @@ import { DB } from "../../utils";
 // Open the db
 const db = SQLite.openDatabase("tasks.db");
 
-interface StarredState extends State {
+interface CompletedState extends State {
   tasks: TaskType[];
 }
 
@@ -24,7 +24,7 @@ const StarredTasks = () => {
   const router = useRouter();
 
   // State
-  const [state, setState] = React.useState<StarredState>({
+  const [state, setState] = React.useState<CompletedState>({
     loading: true,
     tasks: [],
   });
@@ -40,7 +40,7 @@ const StarredTasks = () => {
   React.useEffect(() => {
     db.transaction((tx) => {
       tx.executeSql(
-        `SELECT id, title, starred, completed, description, created_at as createdAt, updated_at as updatedAt FROM task WHERE completed != "TRUE" AND starred = "TRUE"`,
+        `SELECT id, title, starred, completed, description, created_at as createdAt, updated_at as updatedAt FROM task WHERE completed = "TRUE"`,
         [],
         (_, { rows }) => {
           setState({ loading: false, tasks: rows._array });
@@ -68,14 +68,14 @@ const StarredTasks = () => {
       message={message}
       displayMessage={displayMessage}
       onDismissMessage={() => setDisplayMessage(false)}
-      options={{ title: "Starred Tasks", animation: "slide_from_right" }}
+      options={{ title: "Completed Tasks", animation: "slide_from_right" }}
     >
       <View style={Styles.screen}>
         {state.tasks.length === 0 ? (
           <View style={[Styles.fullScreen, { rowGap: 32 }]}>
-            <Text variant="titleLarge">No starred tasks</Text>
+            <Text variant="titleLarge">No completed tasks</Text>
             <Text style={{ marginHorizontal: 32, textAlign: "center" }}>
-              Mark important tasks with a star so you can easily find them here
+              Your completed tasks will appear here
             </Text>
           </View>
         ) : (

@@ -8,8 +8,16 @@ import { ListTypeState } from "../types";
 import * as SQLite from "expo-sqlite";
 import { useRouter } from "expo-router";
 import { FlatList, View } from "react-native";
-import { Button, FAB, List, Text, TextInput } from "react-native-paper";
+import {
+  BottomNavigation,
+  Button,
+  FAB,
+  List,
+  Text,
+  TextInput,
+} from "react-native-paper";
 import { Screen, TaskList, Modal } from "../components";
+import { DB } from "../utils";
 
 // Open the db
 const db = SQLite.openDatabase("tasks.db");
@@ -57,36 +65,6 @@ const Home = () => {
     // List name
     const [name, setName] = React.useState<string>("");
 
-    // Create new list
-    const saveList = () => {
-      db.transaction((tx) => {
-        tx.executeSql(
-          "INSERT INTO list (name) values (?)",
-          [name],
-          (_, data) => {
-            // Clear TextInput
-            setName("");
-
-            // Display success message, reload data and hide modal
-            setMessage("List created");
-            setDisplayMessage(true);
-            setDisplayModal(false);
-            setReload(!reload);
-          },
-          (_, { message }) => {
-            // Display error message and hide modal
-            setMessage(message);
-            setDisplayMessage(true);
-            setDisplayModal(false);
-
-            console.log(`Error: ${message}`);
-
-            return true;
-          }
-        );
-      });
-    };
-
     return (
       <Modal visible={displayModal} onDismiss={() => setDisplayModal(false)}>
         <Text variant="titleLarge">Create New List</Text>
@@ -98,7 +76,32 @@ const Home = () => {
           onChangeText={(value) => setName(value)}
         />
 
-        <Button mode="contained" onPress={saveList} disabled={name === ""}>
+        <Button
+          mode="contained"
+          disabled={name === ""}
+          onPress={() => {
+            DB.createList(
+              db,
+              name,
+              () => {
+                // Clear TextInput
+                setName("");
+
+                // Display success message, reload data and hide modal
+                setMessage("List created");
+                setDisplayMessage(true);
+                setDisplayModal(false);
+                setReload(!reload);
+              },
+              () => {
+                // Display error message and hide modal
+                setMessage(message);
+                setDisplayMessage(true);
+                setDisplayModal(false);
+              }
+            );
+          }}
+        >
           Save
         </Button>
       </Modal>
@@ -124,6 +127,11 @@ const Home = () => {
               title="Starred Tasks"
               onPress={() => router.push("tasks/starred")}
               right={(props) => <List.Icon {...props} icon={"star"} />}
+            />
+            <List.Item
+              title="Completed Tasks"
+              onPress={() => router.push("tasks/completed")}
+              right={(props) => <List.Icon {...props} icon={"check"} />}
             />
 
             <FlatList

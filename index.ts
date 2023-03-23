@@ -60,7 +60,7 @@ db.transaction((tx) => {
         "completed" bool NOT NULL DEFAULT 0,
         "created_at" datetime NOT NULL DEFAULT now,
         "updated_at" datetime NOT NULL DEFAULT now,
-        "list_id" bigint NOT NULL REFERENCES "list" ("id") DEFERRABLE INITIALLY DEFERRED
+        "list_id" bigint NOT NULL REFERENCES "list" ("id") ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
     );
     -- Indexes
     CREATE INDEX IF NOT EXISTS "task_title_index" ON "task" ("title");

@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS "task" (
     "completed" bool NOT NULL DEFAULT 0,
     "created_at" datetime NOT NULL DEFAULT now,
     "updated_at" datetime NOT NULL DEFAULT now,
-    "list_id" bigint NOT NULL REFERENCES "list" ("id") DEFERRABLE INITIALLY DEFERRED
+    "list_id" bigint NOT NULL REFERENCES "list" ("id") ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
 );
 
 --

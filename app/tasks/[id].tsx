@@ -18,6 +18,7 @@ import {
   TextInput,
   useTheme,
 } from "react-native-paper";
+import { DB } from "../../utils";
 
 const BOTTOM_APPBAR_HEIGHT = 80;
 
@@ -90,85 +91,6 @@ const TaskDetails = () => {
     });
   }, [reload]);
 
-  // Mark a task completed or uncompleted
-  const checkTask = (taskId: number, completed: boolean) => {
-    db.transaction((tx) => {
-      tx.executeSql(
-        "UPDATE task SET completed = ? WHERE id = ?",
-        [completed ? "TRUE" : "FALSE", taskId],
-        (_, data) => {
-          // Display success message and reload data
-          setMessage(completed ? "Task completed" : "Task marked uncompleted");
-          setDisplayMessage(true);
-          setReload(!reload);
-        },
-        (_, { message }) => {
-          // Display error message
-          setMessage(message);
-          setDisplayMessage(true);
-
-          console.log(`Error: ${message}`);
-
-          return true;
-        }
-      );
-    });
-  };
-
-  // Star or un-start a task
-  const starTask = (taskId: number, starred: boolean) => {
-    db.transaction((tx) => {
-      tx.executeSql(
-        "UPDATE task SET starred = ? WHERE id = ?",
-        [starred ? "TRUE" : "FALSE", taskId],
-        (_, data) => {
-          // Display success message and reload data
-          setMessage(starred ? "Task starred" : "Task removed from starred");
-          setDisplayMessage(true);
-          setReload(!reload);
-        },
-        (_, { message }) => {
-          // Display error message
-          setMessage(message);
-          setDisplayMessage(true);
-
-          console.log(`Error: ${message}`);
-
-          return true;
-        }
-      );
-    });
-  };
-
-  // Delete task
-  const deleteTask = (taskId: number) => {
-    db.transaction((tx) => {
-      tx.executeSql(
-        "DELETE FROM task WHERE id = ?;",
-        [taskId],
-        (_, data) => {
-          // Display success message
-          setMessage("Task deleted");
-          setDisplayMessage(true);
-
-          // Navigate back
-          setTimeout(() => {
-            router.back();
-          }, 1000);
-        },
-        (_, { message }) => {
-          // Display error message
-          setMessage(message);
-          setDisplayMessage(true);
-
-          console.log(`Error: ${message}`);
-
-          return true;
-        }
-      );
-    });
-  };
-
   const UpdateTaskModal = () => {
     const [localState, setLocalState] = React.useState({
       title: state.task.title,
@@ -176,39 +98,6 @@ const TaskDetails = () => {
       starred: state.task.starred === "TRUE",
       completed: state.task.completed === "TRUE",
     });
-
-    // Update task
-    const updateTask = () => {
-      db.transaction((tx) => {
-        tx.executeSql(
-          "UPDATE task SET title = ?, description = ?, completed = ?, starred = ? WHERE id = ?;",
-          [
-            localState.title,
-            localState.description,
-            localState.completed ? "TRUE" : "FALSE",
-            localState.starred ? "TRUE" : "FALSE",
-            `${id}`,
-          ],
-          (_, data) => {
-            // Display success message, reload data and hide modal
-            setMessage("Task updated");
-            setDisplayMessage(true);
-            setDisplayUpdateTaskModal(false);
-            setReload(!reload);
-          },
-          (_, { message }) => {
-            // Display error message
-            setMessage(message);
-            setDisplayMessage(true);
-            setDisplayUpdateTaskModal(false);
-
-            console.log(`Error: ${message}`);
-
-            return true;
-          }
-        );
-      });
-    };
 
     return (
       <Modal
@@ -262,7 +151,31 @@ const TaskDetails = () => {
 
           <Button
             mode="contained"
-            onPress={updateTask}
+            onPress={() => {
+              DB.updateTask(
+                db,
+                {
+                  id: `${state.task.id}`,
+                  title: localState.title,
+                  description: localState.description,
+                  starred: localState.starred,
+                  completed: localState.completed,
+                },
+                () => {
+                  // Display success message, reload data and hide modal
+                  setMessage("Task updated");
+                  setDisplayMessage(true);
+                  setDisplayUpdateTaskModal(false);
+                  setReload(!reload);
+                },
+                () => {
+                  // Display error message and hide modal
+                  setMessage(message);
+                  setDisplayMessage(true);
+                  setDisplayUpdateTaskModal(false);
+                }
+              );
+            }}
             disabled={localState.title === ""}
             style={{ marginLeft: "auto" }}
           >
@@ -307,15 +220,57 @@ const TaskDetails = () => {
                 ? "checkbox-marked"
                 : "checkbox-blank-outline"
             }
-            onPress={() =>
-              checkTask(state.task.id, state.task.completed !== "TRUE")
-            }
+            onPress={() => {
+              DB.checkTask(
+                db,
+                {
+                  id: `${state.task.id}`,
+                  completed: state.task.completed !== "TRUE",
+                },
+                () => {
+                  // Display success message and reload data
+                  setMessage(
+                    state.task.completed !== "TRUE"
+                      ? "Task completed"
+                      : "Task marked uncompleted"
+                  );
+                  setDisplayMessage(true);
+                  setReload(!reload);
+                },
+                () => {
+                  // Display error message
+                  setMessage(message);
+                  setDisplayMessage(true);
+                }
+              );
+            }}
           />
           <Appbar.Action
             icon={state.task.starred === "TRUE" ? "star" : "star-outline"}
-            onPress={() =>
-              starTask(state.task.id, state.task.starred !== "TRUE")
-            }
+            onPress={() => {
+              DB.starTask(
+                db,
+                {
+                  id: `${state.task.id}`,
+                  starred: state.task.starred !== "TRUE",
+                },
+                () => {
+                  // Display success message and reload data
+                  setMessage(
+                    state.task.starred !== "TRUE"
+                      ? "Task starred"
+                      : "Task removed from starred"
+                  );
+                  setDisplayMessage(true);
+                  setReload(!reload);
+                },
+                () => {
+                  // Display error message
+                  setMessage(message);
+                  setDisplayMessage(true);
+                }
+              );
+            }}
             color={
               state.task.starred === "TRUE" ? theme.colors.primary : undefined
             }
@@ -326,7 +281,27 @@ const TaskDetails = () => {
           />
           <Appbar.Action
             icon="delete"
-            onPress={() => deleteTask(state.task.id)}
+            onPress={() => {
+              DB.deleteTask(
+                db,
+                `${state.task.id}`,
+                () => {
+                  // Display success message
+                  setMessage("Task deleted");
+                  setDisplayMessage(true);
+
+                  // Navigate back
+                  setTimeout(() => {
+                    router.back();
+                  }, 1000);
+                },
+                () => {
+                  // Display error message
+                  setMessage(message);
+                  setDisplayMessage(true);
+                }
+              );
+            }}
           />
         </Appbar>
       </View>

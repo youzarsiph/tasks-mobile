@@ -10,6 +10,7 @@ import { Params, TaskType, TaskTypeState } from "../../types";
 import { useRouter, useSearchParams } from "expo-router";
 import { Button, IconButton, List, Text, TextInput } from "react-native-paper";
 import { Actions, Modal, Screen, Task } from "../../components";
+import { DB } from "../../utils";
 
 // Open the db
 const db = SQLite.openDatabase("tasks.db");
@@ -108,124 +109,12 @@ const Tasks = () => {
     });
   }, [reload]);
 
-  // Mark a task completed or uncompleted
-  const checkTask = (taskId: number, completed: boolean) => {
-    db.transaction((tx) => {
-      tx.executeSql(
-        "UPDATE task SET completed = ? WHERE id = ?",
-        [completed ? "TRUE" : "FALSE", taskId],
-        (_, data) => {
-          // Display success message and reload data
-          setMessage(completed ? "Task completed" : "Task marked uncompleted");
-          setDisplayMessage(true);
-          setReload(!reload);
-        },
-        (_, { message }) => {
-          // Display error message
-          setMessage(message);
-          setDisplayMessage(true);
-
-          console.log(`Error: ${message}`);
-
-          return true;
-        }
-      );
-    });
-  };
-
-  // Star or un-start a task
-  const starTask = (taskId: number, starred: boolean) => {
-    db.transaction((tx) => {
-      tx.executeSql(
-        "UPDATE task SET starred = ? WHERE id = ?",
-        [starred ? "TRUE" : "FALSE", taskId],
-        (_, data) => {
-          // Display success message and reload data
-          setMessage(starred ? "Task starred" : "Task removed from starred");
-          setDisplayMessage(true);
-          setReload(!reload);
-        },
-        (_, { message }) => {
-          // Display error message
-          setMessage(message);
-          setDisplayMessage(true);
-
-          console.log(`Error: ${message}`);
-
-          return true;
-        }
-      );
-    });
-  };
-
-  // Delete list
-  const deleteList = (listId: string) => {
-    db.transaction((tx) => {
-      tx.executeSql(
-        "DELETE FROM list WHERE id = ?; COMMIT;",
-        [listId],
-        (_, data) => {
-          // Display success message and hide actions
-          setMessage("List deleted");
-          setDisplayMessage(true);
-          setDisplayActions(false);
-
-          setTimeout(() => {
-            router.back();
-          }, 1000);
-        },
-        (_, { message }) => {
-          // Display error message and hide actions
-          setMessage(message);
-          setDisplayMessage(true);
-          setDisplayActions(false);
-
-          console.log(`Error: ${message}`);
-
-          return true;
-        }
-      );
-    });
-  };
-
   const NewTaskModal = () => {
     const [localState, setLocalState] = React.useState({
       title: "",
       description: "",
       starred: false,
     });
-
-    // Create new task
-    const createTask = () => {
-      db.transaction((tx) => {
-        tx.executeSql(
-          "INSERT INTO task (title, description, starred, list_id) values (?, ?, ?, ?)",
-          [
-            localState.title,
-            localState.description,
-            localState.starred ? "TRUE" : "FALSE",
-            `${id}`,
-          ],
-          (_, data) => {
-            // Display success message, reload data and hide modal
-            setMessage("Task created");
-            setDisplayMessage(true);
-            setDisplayNewTaskModal(false);
-            setReload(!reload);
-          },
-          (_, { message }) => {
-            // Display error message and hide modal
-            setMessage(message);
-            setDisplayMessage(true);
-            setDisplayNewTaskModal(false);
-
-            console.log(`Error: ${message}`);
-
-            return true;
-          }
-        );
-      });
-    };
 
     return (
       <Modal
@@ -268,7 +157,30 @@ const Tasks = () => {
 
           <Button
             mode="contained"
-            onPress={createTask}
+            onPress={() => {
+              DB.createTask(
+                db,
+                {
+                  title: localState.title,
+                  description: localState.description,
+                  starred: localState.starred,
+                  listId: `${id}`,
+                },
+                () => {
+                  // Display success message, reload data and hide modal
+                  setMessage("Task created");
+                  setDisplayMessage(true);
+                  setDisplayNewTaskModal(false);
+                  setReload(!reload);
+                },
+                () => {
+                  // Display error message and hide modal
+                  setMessage(message);
+                  setDisplayMessage(true);
+                  setDisplayNewTaskModal(false);
+                }
+              );
+            }}
             disabled={localState.title === ""}
             style={{ marginLeft: "auto" }}
           >
@@ -282,33 +194,6 @@ const Tasks = () => {
   const RenameListModal = () => {
     // List name
     const [name, setName] = React.useState<string>(`${title}`);
-
-    // Create new list
-    const renameList = () => {
-      db.transaction((tx) => {
-        tx.executeSql(
-          "UPDATE list SET name = ? WHERE id = ?; COMMIT;",
-          [name, `${id}`],
-          (_, data) => {
-            // Display success message, reload data and hide modal
-            setMessage("List renamed");
-            setDisplayMessage(true);
-            setDisplayRenameListModal(false);
-            setReload(!reload);
-          },
-          (_, { message }) => {
-            // Display error message and hide modal
-            setMessage(message);
-            setDisplayMessage(true);
-            setDisplayRenameListModal(false);
-
-            console.log(`Error: ${message}`);
-
-            return true;
-          }
-        );
-      });
-    };
 
     return (
       <Modal
@@ -324,7 +209,29 @@ const Tasks = () => {
           onChangeText={(value) => setName(value)}
         />
 
-        <Button mode="contained" onPress={renameList} disabled={name === ""}>
+        <Button
+          mode="contained"
+          onPress={() => {
+            DB.updateList(
+              db,
+              { id: `${id}`, name: name },
+              () => {
+                // Display success message, reload data and hide modal
+                setMessage("List renamed");
+                setDisplayMessage(true);
+                setDisplayRenameListModal(false);
+                setReload(!reload);
+              },
+              () => {
+                // Display error message and hide modal
+                setMessage(message);
+                setDisplayMessage(true);
+                setDisplayRenameListModal(false);
+              }
+            );
+          }}
+          disabled={name === ""}
+        >
           Rename
         </Button>
       </Modal>
@@ -361,10 +268,52 @@ const Tasks = () => {
                       item={item}
                       callback={() => router.push(`tasks/${item.id}`)}
                       checkCallback={() => {
-                        checkTask(item.id, item.completed !== "TRUE");
+                        DB.checkTask(
+                          db,
+                          {
+                            id: `${item.id}`,
+                            completed: item.completed !== "TRUE",
+                          },
+                          () => {
+                            // Display success message and reload data
+                            setMessage(
+                              item.completed !== "TRUE"
+                                ? "Task completed"
+                                : "Task marked uncompleted"
+                            );
+                            setDisplayMessage(true);
+                            setReload(!reload);
+                          },
+                          () => {
+                            // Display error message
+                            setMessage(message);
+                            setDisplayMessage(true);
+                          }
+                        );
                       }}
                       starCallback={() => {
-                        starTask(item.id, item.starred !== "TRUE");
+                        DB.starTask(
+                          db,
+                          {
+                            id: `${item.id}`,
+                            starred: item.starred !== "TRUE",
+                          },
+                          () => {
+                            // Display success message and reload data
+                            setMessage(
+                              item.starred !== "TRUE"
+                                ? "Task starred"
+                                : "Task removed from starred"
+                            );
+                            setDisplayMessage(true);
+                            setReload(!reload);
+                          },
+                          () => {
+                            // Display error message
+                            setMessage(message);
+                            setDisplayMessage(true);
+                          }
+                        );
                       }}
                     />
                   )}
@@ -388,10 +337,52 @@ const Tasks = () => {
                         item={item}
                         callback={() => router.push(`tasks/${item.id}`)}
                         checkCallback={() => {
-                          checkTask(item.id, item.completed !== "TRUE");
+                          DB.checkTask(
+                            db,
+                            {
+                              id: `${item.id}`,
+                              completed: item.completed !== "TRUE",
+                            },
+                            () => {
+                              // Display success message and reload data
+                              setMessage(
+                                item.completed !== "TRUE"
+                                  ? "Task completed"
+                                  : "Task marked uncompleted"
+                              );
+                              setDisplayMessage(true);
+                              setReload(!reload);
+                            },
+                            () => {
+                              // Display error message
+                              setMessage(message);
+                              setDisplayMessage(true);
+                            }
+                          );
                         }}
                         starCallback={() => {
-                          starTask(item.id, item.starred !== "TRUE");
+                          DB.starTask(
+                            db,
+                            {
+                              id: `${item.id}`,
+                              starred: item.starred !== "TRUE",
+                            },
+                            () => {
+                              // Display success message and reload data
+                              setMessage(
+                                item.starred !== "TRUE"
+                                  ? "Task starred"
+                                  : "Task removed from starred"
+                              );
+                              setDisplayMessage(true);
+                              setReload(!reload);
+                            },
+                            () => {
+                              // Display error message
+                              setMessage(message);
+                              setDisplayMessage(true);
+                            }
+                          );
                         }}
                       />
                     )}
@@ -428,8 +419,26 @@ const Tasks = () => {
               icon: "delete",
               label: "Delete List",
               onPress: () => {
-                // Delete the list
-                deleteList(`${id}`);
+                DB.deleteList(
+                  db,
+                  `${id}`,
+                  () => {
+                    // Display success message and hide actions
+                    setMessage("List deleted");
+                    setDisplayMessage(true);
+                    setDisplayActions(false);
+
+                    setTimeout(() => {
+                      router.back();
+                    }, 1000);
+                  },
+                  () => {
+                    // Display error message and hide actions
+                    setMessage(message);
+                    setDisplayMessage(true);
+                    setDisplayActions(false);
+                  }
+                );
               },
             },
           ]}
