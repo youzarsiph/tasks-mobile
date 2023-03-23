@@ -26,11 +26,14 @@ const StarredTasks = () => {
   const [state, setState] = React.useState<StarredState>({
     loading: true,
     tasks: [],
-    message: "",
-    displayMessage: false,
-    displayModal: false,
-    reload: false,
   });
+
+  // Message
+  const [message, setMessage] = React.useState<string>("");
+  const [displayMessage, setDisplayMessage] = React.useState<boolean>(false);
+
+  // Reload trigger
+  const [reload, setReload] = React.useState<boolean>(false);
 
   // Load starred tasks
   React.useEffect(() => {
@@ -39,15 +42,15 @@ const StarredTasks = () => {
         `SELECT id, title, starred, completed, description, created_at as createdAt, updated_at as updatedAt FROM task WHERE completed != "TRUE" AND starred = "TRUE"`,
         [],
         (_, { rows }) => {
-          setState({ ...state, loading: false, tasks: rows._array });
+          setState({ loading: false, tasks: rows._array });
         },
         (_, { message }) => {
           // Display error message
+          setMessage(message);
+          setDisplayMessage(true);
           setState({
             ...state,
             loading: false,
-            message: message,
-            displayMessage: true,
           });
 
           console.log(`Error: ${message}`);
@@ -56,7 +59,7 @@ const StarredTasks = () => {
         }
       );
     });
-  }, [state.reload]);
+  }, [reload]);
 
   // Mark task completed or uncompleted
   const checkTask = (taskId: number, completed: boolean) => {
@@ -65,21 +68,15 @@ const StarredTasks = () => {
         "UPDATE task SET completed = ? WHERE id = ?",
         [completed ? "TRUE" : "FALSE", taskId],
         (_, data) => {
-          // Display success message
-          setState({
-            ...state,
-            message: completed ? "Task completed" : "Task marked uncompleted",
-            displayMessage: true,
-            reload: !state.reload,
-          });
+          // Display success message and reload data
+          setMessage(completed ? "Task completed" : "Task marked uncompleted");
+          setDisplayMessage(true);
+          setReload(!reload);
         },
         (_, { message }) => {
           // Display error message
-          setState({
-            ...state,
-            message: message,
-            displayMessage: true,
-          });
+          setMessage(message);
+          setDisplayMessage(true);
 
           console.log(`Error: ${message}`);
 
@@ -89,28 +86,22 @@ const StarredTasks = () => {
     });
   };
 
-  // Star or un-star the task
+  // Star or un-start a task
   const starTask = (taskId: number, starred: boolean) => {
     db.transaction((tx) => {
       tx.executeSql(
         "UPDATE task SET starred = ? WHERE id = ?",
         [starred ? "TRUE" : "FALSE", taskId],
         (_, data) => {
-          // Display success message
-          setState({
-            ...state,
-            message: starred ? "Task starred" : "Task removed from starred",
-            displayMessage: true,
-            reload: !state.reload,
-          });
+          // Display success message and reload data
+          setMessage(starred ? "Task starred" : "Task removed from starred");
+          setDisplayMessage(true);
+          setReload(!reload);
         },
         (_, { message }) => {
           // Display error message
-          setState({
-            ...state,
-            message: message,
-            displayMessage: true,
-          });
+          setMessage(message);
+          setDisplayMessage(true);
 
           console.log(`Error: ${message}`);
 
@@ -123,9 +114,9 @@ const StarredTasks = () => {
   return (
     <Screen
       loading={state.loading}
-      message={state.message}
-      displayMessage={state.displayMessage}
-      onDismissMessage={() => setState({ ...state, displayMessage: false })}
+      message={message}
+      displayMessage={displayMessage}
+      onDismissMessage={() => setDisplayMessage(false)}
       options={{ title: "Starred Tasks", animation: "slide_from_right" }}
     >
       <View style={Styles.screen}>

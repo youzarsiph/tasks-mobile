@@ -26,6 +26,10 @@ const Settings = () => {
     displayModal: false,
   });
 
+  // Message
+  const [message, setMessage] = React.useState<string>("");
+  const [displayMessage, setDisplayMessage] = React.useState<boolean>(false);
+
   // Load settings
   React.useEffect(() => {
     (async () => {
@@ -47,20 +51,18 @@ const Settings = () => {
       await SecureStore.setItemAsync("theme", state.theme);
       await SecureStore.setItemAsync("color", state.color);
 
-      setState({
-        ...state,
-        message: "Settings applied, restart the app to reflect the changes",
-        displayMessage: true,
-      });
+      // Display success message
+      setMessage("Settings applied, restart the app to reflect the changes");
+      setDisplayMessage(true);
     })();
   };
 
   return (
     <Screen
       loading={state.loading}
-      message={state.message}
-      displayMessage={state.displayMessage}
-      onDismissMessage={() => setState({ ...state, displayMessage: false })}
+      message={message}
+      displayMessage={displayMessage}
+      onDismissMessage={() => setDisplayMessage(false)}
       options={{ title: "Settings", animation: "slide_from_right" }}
     >
       <View style={Styles.screen}>

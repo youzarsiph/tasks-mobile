@@ -26,14 +26,29 @@ const Tasks = () => {
     loading: true,
     tasks: [],
     completedTasks: [],
-    displayCompletedTasks: false,
-    message: "",
-    displayMessage: false,
-    reload: false,
-    displayModal: false,
-    displayFABGroup: false,
-    displayUpdateModal: false,
   });
+
+  // Message
+  const [message, setMessage] = React.useState<string>("");
+  const [displayMessage, setDisplayMessage] = React.useState<boolean>(false);
+
+  // New Task Modal
+  const [displayNewTaskModal, setDisplayNewTaskModal] =
+    React.useState<boolean>(false);
+
+  // Rename List Modal
+  const [displayRenameListModal, setDisplayRenameListModal] =
+    React.useState<boolean>(false);
+
+  // Completed tasks accordion
+  const [displayCompletedTasks, setDisplayCompletedTasks] =
+    React.useState<boolean>(false);
+
+  // FAB actions
+  const [displayActions, setDisplayActions] = React.useState<boolean>(false);
+
+  // Reload trigger
+  const [reload, setReload] = React.useState<boolean>(false);
 
   // Load data
   React.useEffect(() => {
@@ -49,11 +64,12 @@ const Tasks = () => {
         },
         (_, { message }) => {
           // Display error message
+          setMessage(message);
+          setDisplayMessage(true);
+
           setState({
             ...state,
             loading: false,
-            message: message,
-            displayMessage: true,
           });
 
           console.log(`Error: ${message}`);
@@ -67,7 +83,7 @@ const Tasks = () => {
         `SELECT id, title, starred, completed, description, created_at as createdAt, updated_at as updatedAt FROM task WHERE completed = "TRUE" AND list_id = ?`,
         [`${id}`],
         (_, { rows }) => {
-          // Hide activity indicator and set the data
+          // Hide activity indicator and set data
           setState({
             ...state,
             loading: false,
@@ -77,11 +93,11 @@ const Tasks = () => {
         },
         (_, { message }) => {
           // Display error message
+          setMessage(message);
+          setDisplayMessage(true);
           setState({
             ...state,
             loading: false,
-            message: message,
-            displayMessage: true,
           });
 
           console.log(`Error: ${message}`);
@@ -90,7 +106,7 @@ const Tasks = () => {
         }
       );
     });
-  }, [state.reload]);
+  }, [reload]);
 
   // Mark a task completed or uncompleted
   const checkTask = (taskId: number, completed: boolean) => {
@@ -100,20 +116,14 @@ const Tasks = () => {
         [completed ? "TRUE" : "FALSE", taskId],
         (_, data) => {
           // Display success message and reload data
-          setState({
-            ...state,
-            message: completed ? "Task completed" : "Task marked uncompleted",
-            displayMessage: true,
-            reload: !state.reload,
-          });
+          setMessage(completed ? "Task completed" : "Task marked uncompleted");
+          setDisplayMessage(true);
+          setReload(!reload);
         },
         (_, { message }) => {
           // Display error message
-          setState({
-            ...state,
-            message: message,
-            displayMessage: true,
-          });
+          setMessage(message);
+          setDisplayMessage(true);
 
           console.log(`Error: ${message}`);
 
@@ -130,21 +140,45 @@ const Tasks = () => {
         "UPDATE task SET starred = ? WHERE id = ?",
         [starred ? "TRUE" : "FALSE", taskId],
         (_, data) => {
-          // Display the success message and reload the data
-          setState({
-            ...state,
-            message: starred ? "Task starred" : "Task removed from starred",
-            displayMessage: true,
-            reload: !state.reload,
-          });
+          // Display success message and reload data
+          setMessage(starred ? "Task starred" : "Task removed from starred");
+          setDisplayMessage(true);
+          setReload(!reload);
         },
         (_, { message }) => {
           // Display error message
-          setState({
-            ...state,
-            message: message,
-            displayMessage: true,
-          });
+          setMessage(message);
+          setDisplayMessage(true);
+
+          console.log(`Error: ${message}`);
+
+          return true;
+        }
+      );
+    });
+  };
+
+  // Delete list
+  const deleteList = (listId: string) => {
+    db.transaction((tx) => {
+      tx.executeSql(
+        "DELETE FROM list WHERE id = ?; COMMIT;",
+        [listId],
+        (_, data) => {
+          // Display success message and hide actions
+          setMessage("List deleted");
+          setDisplayMessage(true);
+          setDisplayActions(false);
+
+          setTimeout(() => {
+            router.back();
+          }, 1000);
+        },
+        (_, { message }) => {
+          // Display error message and hide actions
+          setMessage(message);
+          setDisplayMessage(true);
+          setDisplayActions(false);
 
           console.log(`Error: ${message}`);
 
@@ -162,7 +196,7 @@ const Tasks = () => {
     });
 
     // Create new task
-    const saveTask = () => {
+    const createTask = () => {
       db.transaction((tx) => {
         tx.executeSql(
           "INSERT INTO task (title, description, starred, list_id) values (?, ?, ?, ?)",
@@ -173,23 +207,18 @@ const Tasks = () => {
             `${id}`,
           ],
           (_, data) => {
-            // Display success message, reload the data and hide the modal
-            setState({
-              ...state,
-              message: "Task created",
-              displayMessage: true,
-              displayModal: false,
-              reload: !state.reload,
-            });
+            // Display success message, reload data and hide modal
+            setMessage("Task created");
+            setDisplayMessage(true);
+            setDisplayNewTaskModal(false);
+            setReload(!reload);
           },
           (_, { message }) => {
             // Display error message and hide modal
-            setState({
-              ...state,
-              message: message,
-              displayMessage: true,
-              displayModal: false,
-            });
+            setMessage(message);
+            setDisplayMessage(true);
+            setDisplayNewTaskModal(false);
+
             console.log(`Error: ${message}`);
 
             return true;
@@ -200,8 +229,8 @@ const Tasks = () => {
 
     return (
       <Modal
-        visible={state.displayModal}
-        onDismiss={() => setState({ ...state, displayModal: false })}
+        visible={displayNewTaskModal}
+        onDismiss={() => setDisplayNewTaskModal(false)}
       >
         <Text variant="titleLarge">Create New Task</Text>
 
@@ -239,7 +268,7 @@ const Tasks = () => {
 
           <Button
             mode="contained"
-            onPress={saveTask}
+            onPress={createTask}
             disabled={localState.title === ""}
             style={{ marginLeft: "auto" }}
           >
@@ -261,23 +290,17 @@ const Tasks = () => {
           "UPDATE list SET name = ? WHERE id = ?; COMMIT;",
           [name, `${id}`],
           (_, data) => {
-            // Display the success message, reload the data and hide the modal
-            setState({
-              ...state,
-              displayModal: false,
-              message: "List renamed",
-              displayMessage: true,
-              reload: !state.reload,
-            });
+            // Display success message, reload data and hide modal
+            setMessage("List renamed");
+            setDisplayMessage(true);
+            setDisplayRenameListModal(false);
+            setReload(!reload);
           },
           (_, { message }) => {
-            // Display error message
-            setState({
-              ...state,
-              message: message,
-              displayMessage: true,
-              displayModal: false,
-            });
+            // Display error message and hide modal
+            setMessage(message);
+            setDisplayMessage(true);
+            setDisplayRenameListModal(false);
 
             console.log(`Error: ${message}`);
 
@@ -289,8 +312,8 @@ const Tasks = () => {
 
     return (
       <Modal
-        visible={state.displayUpdateModal}
-        onDismiss={() => setState({ ...state, displayUpdateModal: false })}
+        visible={displayRenameListModal}
+        onDismiss={() => setDisplayRenameListModal(false)}
       >
         <Text variant="titleLarge">Rename List</Text>
         <TextInput
@@ -311,9 +334,9 @@ const Tasks = () => {
   return (
     <Screen
       loading={state.loading}
-      message={state.message}
-      displayMessage={state.displayMessage}
-      onDismissMessage={() => setState({ ...state, displayMessage: false })}
+      message={message}
+      displayMessage={displayMessage}
+      onDismissMessage={() => setDisplayMessage(false)}
       options={{ title: title, animation: "slide_from_right" }}
     >
       <View style={Styles.screen}>
@@ -352,12 +375,9 @@ const Tasks = () => {
             {state.completedTasks.length === 0 ? undefined : (
               <List.Section>
                 <List.Accordion
-                  expanded={state.displayCompletedTasks}
+                  expanded={displayCompletedTasks}
                   onPress={() =>
-                    setState({
-                      ...state,
-                      displayCompletedTasks: !state.displayCompletedTasks,
-                    })
+                    setDisplayCompletedTasks(!displayCompletedTasks)
                   }
                   title={`Completed (${state.completedTasks.length})`}
                 >
@@ -383,21 +403,16 @@ const Tasks = () => {
         )}
 
         <Actions
-          open={state.displayFABGroup}
-          onPress={() =>
-            setState({ ...state, displayFABGroup: !state.displayFABGroup })
-          }
+          open={displayActions}
+          onPress={() => setDisplayActions(!displayActions)}
           actions={[
             {
               icon: "plus",
               label: "New Task",
               onPress: () => {
                 // Hide actions and display new task modal
-                setState({
-                  ...state,
-                  displayModal: true,
-                  displayFABGroup: false,
-                });
+                setDisplayActions(false);
+                setDisplayNewTaskModal(true);
               },
             },
             {
@@ -405,11 +420,8 @@ const Tasks = () => {
               label: "Rename List",
               onPress: () => {
                 // Hide actions and display Update List Modal
-                setState({
-                  ...state,
-                  displayFABGroup: false,
-                  displayUpdateModal: true,
-                });
+                setDisplayActions(false);
+                setDisplayRenameListModal(true);
               },
             },
             {
@@ -417,38 +429,7 @@ const Tasks = () => {
               label: "Delete List",
               onPress: () => {
                 // Delete the list
-                db.transaction((tx) => {
-                  tx.executeSql(
-                    "DELETE FROM list WHERE id = ?; COMMIT;",
-                    [`${id}`],
-                    (_, data) => {
-                      // Display the success message
-                      setState({
-                        ...state,
-                        message: "List deleted",
-                        displayMessage: true,
-                        displayFABGroup: false,
-                      });
-
-                      setTimeout(() => {
-                        router.back();
-                      }, 3000);
-                    },
-                    (_, { message }) => {
-                      // Display error message
-                      setState({
-                        ...state,
-                        message: message,
-                        displayMessage: true,
-                        displayFABGroup: false,
-                      });
-
-                      console.log(`Error: ${message}`);
-
-                      return true;
-                    }
-                  );
-                });
+                deleteList(`${id}`);
               },
             },
           ]}

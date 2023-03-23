@@ -29,6 +29,9 @@ interface DetailsState extends State {
 }
 
 const TaskDetails = () => {
+  // Task details
+  const { id } = useSearchParams<Params>();
+
   // Router
   const router = useRouter();
 
@@ -41,10 +44,6 @@ const TaskDetails = () => {
   // State
   const [state, setState] = React.useState<DetailsState>({
     loading: true,
-    message: "",
-    displayMessage: false,
-    displayModal: false,
-    reload: false,
     task: {
       id: 1,
       title: "Task title",
@@ -56,8 +55,16 @@ const TaskDetails = () => {
     },
   });
 
-  // Task details
-  const { id } = useSearchParams<Params>();
+  // Message
+  const [message, setMessage] = React.useState<string>("");
+  const [displayMessage, setDisplayMessage] = React.useState<boolean>(false);
+
+  // Update Task Modal
+  const [displayUpdateTaskModal, setDisplayUpdateTaskModal] =
+    React.useState<boolean>(false);
+
+  // Reload trigger
+  const [reload, setReload] = React.useState<boolean>(false);
 
   // Load task
   React.useEffect(() => {
@@ -71,12 +78,9 @@ const TaskDetails = () => {
         },
         (_, { message }) => {
           // Display error message
-          setState({
-            ...state,
-            loading: false,
-            message: message,
-            displayMessage: true,
-          });
+          setMessage(message);
+          setDisplayMessage(true);
+          setState({ ...state, loading: false });
 
           console.log(`Error: ${message}`);
 
@@ -84,7 +88,7 @@ const TaskDetails = () => {
         }
       );
     });
-  }, [state.reload]);
+  }, [reload]);
 
   // Mark a task completed or uncompleted
   const checkTask = (taskId: number, completed: boolean) => {
@@ -93,21 +97,15 @@ const TaskDetails = () => {
         "UPDATE task SET completed = ? WHERE id = ?",
         [completed ? "TRUE" : "FALSE", taskId],
         (_, data) => {
-          // Display success message and reload to reflect the changes
-          setState({
-            ...state,
-            message: completed ? "Task completed" : "Task marked uncompleted",
-            displayMessage: true,
-            reload: !state.reload,
-          });
+          // Display success message and reload data
+          setMessage(completed ? "Task completed" : "Task marked uncompleted");
+          setDisplayMessage(true);
+          setReload(!reload);
         },
         (_, { message }) => {
           // Display error message
-          setState({
-            ...state,
-            message: message,
-            displayMessage: true,
-          });
+          setMessage(message);
+          setDisplayMessage(true);
 
           console.log(`Error: ${message}`);
 
@@ -124,21 +122,15 @@ const TaskDetails = () => {
         "UPDATE task SET starred = ? WHERE id = ?",
         [starred ? "TRUE" : "FALSE", taskId],
         (_, data) => {
-          // Display success message and reload to reflect the changes
-          setState({
-            ...state,
-            message: starred ? "Task starred" : "Task removed from starred",
-            displayMessage: true,
-            reload: !state.reload,
-          });
+          // Display success message and reload data
+          setMessage(starred ? "Task starred" : "Task removed from starred");
+          setDisplayMessage(true);
+          setReload(!reload);
         },
         (_, { message }) => {
           // Display error message
-          setState({
-            ...state,
-            message: message,
-            displayMessage: true,
-          });
+          setMessage(message);
+          setDisplayMessage(true);
 
           console.log(`Error: ${message}`);
 
@@ -156,24 +148,18 @@ const TaskDetails = () => {
         [taskId],
         (_, data) => {
           // Display success message
-          setState({
-            ...state,
-            message: "Task deleted",
-            displayMessage: true,
-          });
+          setMessage("Task deleted");
+          setDisplayMessage(true);
 
           // Navigate back
           setTimeout(() => {
             router.back();
-          }, 3000);
+          }, 1000);
         },
         (_, { message }) => {
           // Display error message
-          setState({
-            ...state,
-            message: message,
-            displayMessage: true,
-          });
+          setMessage(message);
+          setDisplayMessage(true);
 
           console.log(`Error: ${message}`);
 
@@ -204,23 +190,17 @@ const TaskDetails = () => {
             `${id}`,
           ],
           (_, data) => {
-            // Display success message and reload to reflect the changes
-            setState({
-              ...state,
-              displayModal: false,
-              message: "Task updated",
-              displayMessage: true,
-              reload: !state.reload,
-            });
+            // Display success message, reload data and hide modal
+            setMessage("Task updated");
+            setDisplayMessage(true);
+            setDisplayUpdateTaskModal(false);
+            setReload(!reload);
           },
           (_, { message }) => {
             // Display error message
-            setState({
-              ...state,
-              displayModal: false,
-              message: message,
-              displayMessage: true,
-            });
+            setMessage(message);
+            setDisplayMessage(true);
+            setDisplayUpdateTaskModal(false);
 
             console.log(`Error: ${message}`);
 
@@ -232,8 +212,8 @@ const TaskDetails = () => {
 
     return (
       <Modal
-        visible={state.displayModal}
-        onDismiss={() => setState({ ...state, displayModal: false })}
+        visible={displayUpdateTaskModal}
+        onDismiss={() => setDisplayUpdateTaskModal(false)}
       >
         <Text variant="titleLarge">Update Task</Text>
 
@@ -296,9 +276,9 @@ const TaskDetails = () => {
   return (
     <Screen
       loading={state.loading}
-      message={state.message}
-      displayMessage={state.displayMessage}
-      onDismissMessage={() => setState({ ...state, displayMessage: false })}
+      message={message}
+      displayMessage={displayMessage}
+      onDismissMessage={() => setDisplayMessage(false)}
       options={{ title: "Task Details", animation: "slide_from_right" }}
     >
       <View style={Styles.screen}>
@@ -342,7 +322,7 @@ const TaskDetails = () => {
           />
           <Appbar.Action
             icon="pencil"
-            onPress={() => setState({ ...state, displayModal: true })}
+            onPress={() => setDisplayUpdateTaskModal(true)}
           />
           <Appbar.Action
             icon="delete"

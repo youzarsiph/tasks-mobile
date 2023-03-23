@@ -16,10 +16,6 @@ interface ScreenProps {
 
 interface State {
   loading: boolean;
-  message: string;
-  displayMessage: boolean;
-  reload?: boolean;
-  displayModal: boolean;
 }
 
 interface ListTypeState extends State {
@@ -29,9 +25,6 @@ interface ListTypeState extends State {
 interface TaskTypeState extends State {
   tasks: readonly TaskType[];
   completedTasks: readonly TaskType[];
-  displayCompletedTasks: boolean;
-  displayUpdateModal: boolean;
-  displayFABGroup: boolean;
 }
 
 type Params = {

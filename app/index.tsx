@@ -22,11 +22,17 @@ const Home = () => {
   const [state, setState] = React.useState<ListTypeState>({
     loading: true,
     lists: [],
-    message: "",
-    displayMessage: false,
-    reload: false,
-    displayModal: false,
   });
+
+  // Message
+  const [message, setMessage] = React.useState<string>("");
+  const [displayMessage, setDisplayMessage] = React.useState<boolean>(false);
+
+  // Modal
+  const [displayModal, setDisplayModal] = React.useState<boolean>(false);
+
+  // Reload trigger
+  const [reload, setReload] = React.useState<boolean>(false);
 
   // Load task lists
   React.useEffect(() => {
@@ -35,8 +41,8 @@ const Home = () => {
         "SELECT id, name, created_at as createdAt, updated_at as updatedAt FROM list",
         [],
         (_, { rows }) => {
-          // Set the data and hide activity indicator
-          setState({ ...state, lists: rows._array, loading: false });
+          // Set data and hide activity indicator
+          setState({ lists: rows._array, loading: false });
         },
         (_, { message }) => {
           console.log(`Error: ${message}`);
@@ -45,7 +51,7 @@ const Home = () => {
         }
       );
     });
-  }, [state.reload]);
+  }, [reload]);
 
   const NewListModal = () => {
     // List name
@@ -61,22 +67,17 @@ const Home = () => {
             // Clear TextInput
             setName("");
 
-            // Display the success message, reload the data and hide the modal
-            setState({
-              ...state,
-              message: "List created",
-              displayMessage: true,
-              reload: !state.reload,
-              displayModal: false,
-            });
+            // Display success message, reload data and hide modal
+            setMessage("List created");
+            setDisplayMessage(true);
+            setDisplayModal(false);
+            setReload(!reload);
           },
           (_, { message }) => {
-            // Display error message
-            setState({
-              ...state,
-              message: message,
-              displayMessage: true,
-            });
+            // Display error message and hide modal
+            setMessage(message);
+            setDisplayMessage(true);
+            setDisplayModal(false);
 
             console.log(`Error: ${message}`);
 
@@ -87,10 +88,7 @@ const Home = () => {
     };
 
     return (
-      <Modal
-        visible={state.displayModal}
-        onDismiss={() => setState({ ...state, displayModal: false })}
-      >
+      <Modal visible={displayModal} onDismiss={() => setDisplayModal(false)}>
         <Text variant="titleLarge">Create New List</Text>
         <TextInput
           value={name}
@@ -110,10 +108,10 @@ const Home = () => {
   return (
     <Screen
       loading={state.loading}
-      message={state.message}
+      message={message}
       options={{ title: "Tasks" }}
-      displayMessage={state.displayMessage}
-      onDismissMessage={() => setState({ ...state, displayMessage: false })}
+      displayMessage={displayMessage}
+      onDismissMessage={() => setDisplayMessage(false)}
     >
       <View style={Styles.screen}>
         {state.lists.length === 0 ? (
@@ -149,7 +147,7 @@ const Home = () => {
           mode="flat"
           icon="plus"
           size="medium"
-          onPress={() => setState({ ...state, displayModal: true })}
+          onPress={() => setDisplayModal(true)}
           style={{ position: "absolute", right: 16, bottom: 16 }}
         />
 

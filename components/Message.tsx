@@ -12,6 +12,7 @@ const Message = (props: {
 }) => {
   return (
     <Snackbar
+      duration={2000}
       visible={props.visible}
       onDismiss={() => props.onDismiss()}
       action={{
