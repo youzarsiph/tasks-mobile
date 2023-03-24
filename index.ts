@@ -91,7 +91,3 @@ db.transaction((tx) => {
     }
   );
 });
-
-// Delete db
-// db.closeAsync();
-// db.deleteAsync();

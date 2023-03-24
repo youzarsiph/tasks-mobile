@@ -3,8 +3,8 @@
  */
 
 import React from "react";
-import { ListType } from "../types";
 import { List } from "react-native-paper";
+import { ListType } from "../types";
 
 const TaskList = (props: { item: ListType; onPress: () => void }) => {
   return (

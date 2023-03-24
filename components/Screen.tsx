@@ -3,14 +3,14 @@
  */
 
 import React from "react";
-import Styles from "../styles";
 import { Stack } from "expo-router";
 import { View } from "react-native";
-import { ScreenProps } from "../types";
 import { StatusBar } from "expo-status-bar";
 import { useTheme } from "react-native-paper";
-import LoadingIndicator from "./LoadingIndicator";
+import Styles from "../styles";
 import Message from "./Message";
+import { ScreenProps } from "../types";
+import LoadingIndicator from "./LoadingIndicator";
 
 export default function Screen(props: ScreenProps) {
   const theme = useTheme();

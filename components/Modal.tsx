@@ -3,8 +3,8 @@
  */
 
 import React from "react";
-import Styles from "../styles";
 import { Portal, Modal as Container, useTheme } from "react-native-paper";
+import Styles from "../styles";
 
 const Modal = (props: {
   visible: boolean;

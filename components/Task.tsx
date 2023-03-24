@@ -3,8 +3,8 @@
  */
 
 import React from "react";
-import { TaskType } from "../types";
 import { IconButton, List, useTheme } from "react-native-paper";
+import { TaskType } from "../types";
 
 const Task = (props: {
   item: TaskType;

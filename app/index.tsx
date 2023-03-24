@@ -3,21 +3,15 @@
  */
 
 import React from "react";
-import Styles from "../styles";
-import { ListTypeState } from "../types";
+import { View } from "react-native";
 import * as SQLite from "expo-sqlite";
 import { useRouter } from "expo-router";
-import { FlatList, View } from "react-native";
-import {
-  BottomNavigation,
-  Button,
-  FAB,
-  List,
-  Text,
-  TextInput,
-} from "react-native-paper";
-import { Screen, TaskList, Modal } from "../components";
+import { FlashList } from "@shopify/flash-list";
+import { Button, FAB, List, Text, TextInput } from "react-native-paper";
 import { DB } from "../utils";
+import Styles from "../styles";
+import { ListTypeState } from "../types";
+import { Screen, TaskList, Modal } from "../components";
 
 // Open the db
 const db = SQLite.openDatabase("tasks.db");
@@ -74,6 +68,8 @@ const Home = () => {
           label={"New List"}
           placeholder={"Enter list name"}
           onChangeText={(value) => setName(value)}
+          maxLength={32}
+          right={<TextInput.Affix text={`${32 - name.length}`} />}
         />
 
         <Button
@@ -134,8 +130,9 @@ const Home = () => {
               right={(props) => <List.Icon {...props} icon={"check"} />}
             />
 
-            <FlatList
+            <FlashList
               data={state.lists}
+              estimatedItemSize={100}
               renderItem={({ item }) => (
                 <TaskList
                   item={item}

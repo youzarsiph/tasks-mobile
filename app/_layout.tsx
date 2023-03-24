@@ -3,11 +3,11 @@
  */
 
 import React from "react";
-import getTheme from "../theme";
 import { Stack } from "expo-router";
-import { Header } from "../components";
 import { Provider } from "react-native-paper";
 import { ThemeProvider } from "@react-navigation/native";
+import getTheme from "../theme";
+import { Header } from "../components";
 import { HeaderProps } from "../components/Header";
 
 const Layout = () => {

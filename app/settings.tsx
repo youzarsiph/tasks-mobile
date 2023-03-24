@@ -3,12 +3,12 @@
  */
 
 import React from "react";
-import Styles from "../styles";
 import { View } from "react-native";
 import * as SecureStore from "expo-secure-store";
-import { Screen } from "../components";
 import { Button, List, RadioButton } from "react-native-paper";
+import Styles from "../styles";
 import { State } from "../types";
+import { Screen } from "../components";
 
 interface SettingsState extends State {
   theme: string;
@@ -21,9 +21,6 @@ const Settings = () => {
     loading: true,
     theme: "",
     color: "",
-    message: "",
-    displayMessage: false,
-    displayModal: false,
   });
 
   // Message

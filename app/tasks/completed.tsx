@@ -3,14 +3,15 @@
  */
 
 import React from "react";
-import Styles from "../../styles";
+import { View } from "react-native";
 import * as SQLite from "expo-sqlite";
-import { TaskType, State } from "../../types";
 import { useRouter } from "expo-router";
-import { FlatList, View } from "react-native";
 import { List, Text } from "react-native-paper";
-import { Screen, Task } from "../../components";
+import { FlashList } from "@shopify/flash-list";
 import { DB } from "../../utils";
+import Styles from "../../styles";
+import { TaskType, State } from "../../types";
+import { Screen, Task } from "../../components";
 
 // Open the db
 const db = SQLite.openDatabase("tasks.db");
@@ -79,9 +80,10 @@ const StarredTasks = () => {
             </Text>
           </View>
         ) : (
-          <List.Section>
-            <FlatList
+          <List.Section style={Styles.screen}>
+            <FlashList
               data={state.tasks}
+              estimatedItemSize={100}
               renderItem={({ item }) => (
                 <Task
                   item={item}

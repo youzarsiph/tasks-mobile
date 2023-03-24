@@ -3,12 +3,9 @@
  */
 
 import React from "react";
-import Styles from "../../styles";
-import * as SQLite from "expo-sqlite";
 import { View } from "react-native";
-import { Params, State, TaskType } from "../../types";
+import * as SQLite from "expo-sqlite";
 import { useRouter, useSearchParams } from "expo-router";
-import { Screen, Modal } from "../../components";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   Appbar,
@@ -19,6 +16,9 @@ import {
   useTheme,
 } from "react-native-paper";
 import { DB } from "../../utils";
+import Styles from "../../styles";
+import { Screen, Modal } from "../../components";
+import { Params, State, TaskType } from "../../types";
 
 const BOTTOM_APPBAR_HEIGHT = 80;
 
@@ -109,22 +109,28 @@ const TaskDetails = () => {
         <TextInput
           value={localState.title}
           mode="outlined"
+          maxLength={32}
           label={"Task title"}
           placeholder={"Enter task title"}
           onChangeText={(value) =>
             setLocalState({ ...localState, title: value })
           }
+          right={<TextInput.Affix text={`${32 - localState.title.length}`} />}
         />
 
         <TextInput
           multiline
           mode="outlined"
+          maxLength={256}
           numberOfLines={2}
           value={localState.description}
           label={"Task description"}
           placeholder={"Enter task details"}
           onChangeText={(value) =>
             setLocalState({ ...localState, description: value })
+          }
+          right={
+            <TextInput.Affix text={`${256 - localState.description.length}`} />
           }
         />
 

@@ -3,14 +3,15 @@
  */
 
 import React from "react";
-import Styles from "../../styles";
+import { View } from "react-native";
 import * as SQLite from "expo-sqlite";
-import { FlatList, View } from "react-native";
-import { Params, TaskType, TaskTypeState } from "../../types";
+import { FlashList } from "@shopify/flash-list";
 import { useRouter, useSearchParams } from "expo-router";
 import { Button, IconButton, List, Text, TextInput } from "react-native-paper";
-import { Actions, Modal, Screen, Task } from "../../components";
 import { DB } from "../../utils";
+import Styles from "../../styles";
+import { Params, TaskType, TaskTypeState } from "../../types";
+import { Actions, Modal, Screen, Task } from "../../components";
 
 // Open the db
 const db = SQLite.openDatabase("tasks.db");
@@ -126,22 +127,28 @@ const Tasks = () => {
         <TextInput
           value={localState.title}
           mode="outlined"
+          maxLength={32}
           label={"Task title"}
           placeholder={"Enter task title"}
           onChangeText={(value) =>
             setLocalState({ ...localState, title: value })
           }
+          right={<TextInput.Affix text={`${32 - localState.title.length}`} />}
         />
 
         <TextInput
           multiline
           mode="outlined"
+          maxLength={256}
           numberOfLines={2}
           value={localState.description}
           label={"Task description"}
           placeholder={"Enter task details"}
           onChangeText={(value) =>
             setLocalState({ ...localState, description: value })
+          }
+          right={
+            <TextInput.Affix text={`${256 - localState.description.length}`} />
           }
         />
 
@@ -206,7 +213,9 @@ const Tasks = () => {
           mode="outlined"
           label={"New Name"}
           placeholder={"Enter list name"}
+          maxLength={32}
           onChangeText={(value) => setName(value)}
+          right={<TextInput.Affix text={`${32 - name.length}`} />}
         />
 
         <Button
@@ -260,9 +269,10 @@ const Tasks = () => {
                 <Text>Nice work!</Text>
               </View>
             ) : (
-              <List.Section>
-                <FlatList
+              <List.Section style={Styles.screen}>
+                <FlashList
                   data={state.tasks}
+                  estimatedItemSize={100}
                   renderItem={({ item }) => (
                     <Task
                       item={item}
@@ -322,73 +332,70 @@ const Tasks = () => {
             )}
 
             {state.completedTasks.length === 0 ? undefined : (
-              <List.Section>
-                <List.Accordion
-                  expanded={displayCompletedTasks}
-                  onPress={() =>
-                    setDisplayCompletedTasks(!displayCompletedTasks)
-                  }
-                  title={`Completed (${state.completedTasks.length})`}
-                >
-                  <FlatList
-                    data={state.completedTasks}
-                    renderItem={({ item }) => (
-                      <Task
-                        item={item}
-                        callback={() => router.push(`tasks/${item.id}`)}
-                        checkCallback={() => {
-                          DB.checkTask(
-                            db,
-                            {
-                              id: `${item.id}`,
-                              completed: item.completed !== "TRUE",
-                            },
-                            () => {
-                              // Display success message and reload data
-                              setMessage(
-                                item.completed !== "TRUE"
-                                  ? "Task completed"
-                                  : "Task marked uncompleted"
-                              );
-                              setDisplayMessage(true);
-                              setReload(!reload);
-                            },
-                            () => {
-                              // Display error message
-                              setMessage(message);
-                              setDisplayMessage(true);
-                            }
-                          );
-                        }}
-                        starCallback={() => {
-                          DB.starTask(
-                            db,
-                            {
-                              id: `${item.id}`,
-                              starred: item.starred !== "TRUE",
-                            },
-                            () => {
-                              // Display success message and reload data
-                              setMessage(
-                                item.starred !== "TRUE"
-                                  ? "Task starred"
-                                  : "Task removed from starred"
-                              );
-                              setDisplayMessage(true);
-                              setReload(!reload);
-                            },
-                            () => {
-                              // Display error message
-                              setMessage(message);
-                              setDisplayMessage(true);
-                            }
-                          );
-                        }}
-                      />
-                    )}
-                  />
-                </List.Accordion>
-              </List.Section>
+              <List.Accordion
+                expanded={displayCompletedTasks}
+                onPress={() => setDisplayCompletedTasks(!displayCompletedTasks)}
+                title={`Completed (${state.completedTasks.length})`}
+              >
+                <FlashList
+                  data={state.completedTasks}
+                  estimatedItemSize={100}
+                  renderItem={({ item }) => (
+                    <Task
+                      item={item}
+                      callback={() => router.push(`tasks/${item.id}`)}
+                      checkCallback={() => {
+                        DB.checkTask(
+                          db,
+                          {
+                            id: `${item.id}`,
+                            completed: item.completed !== "TRUE",
+                          },
+                          () => {
+                            // Display success message and reload data
+                            setMessage(
+                              item.completed !== "TRUE"
+                                ? "Task completed"
+                                : "Task marked uncompleted"
+                            );
+                            setDisplayMessage(true);
+                            setReload(!reload);
+                          },
+                          () => {
+                            // Display error message
+                            setMessage(message);
+                            setDisplayMessage(true);
+                          }
+                        );
+                      }}
+                      starCallback={() => {
+                        DB.starTask(
+                          db,
+                          {
+                            id: `${item.id}`,
+                            starred: item.starred !== "TRUE",
+                          },
+                          () => {
+                            // Display success message and reload data
+                            setMessage(
+                              item.starred !== "TRUE"
+                                ? "Task starred"
+                                : "Task removed from starred"
+                            );
+                            setDisplayMessage(true);
+                            setReload(!reload);
+                          },
+                          () => {
+                            // Display error message
+                            setMessage(message);
+                            setDisplayMessage(true);
+                          }
+                        );
+                      }}
+                    />
+                  )}
+                />
+              </List.Accordion>
             )}
           </>
         )}
