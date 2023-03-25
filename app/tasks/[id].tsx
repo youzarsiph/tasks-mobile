@@ -194,11 +194,11 @@ const TaskDetails = () => {
 
   return (
     <Screen
+      options={{ title: "Task Details" }}
       loading={state.loading}
       message={message}
       displayMessage={displayMessage}
       onDismissMessage={() => setDisplayMessage(false)}
-      options={{ title: "Task Details", animation: "slide_from_right" }}
     >
       <View style={Styles.screen}>
         <View style={{ rowGap: 32, padding: 16 }}>

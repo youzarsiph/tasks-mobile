@@ -17,7 +17,12 @@ export default function Screen(props: ScreenProps) {
 
   return (
     <View style={Styles.screen}>
-      <Stack.Screen options={props.options} />
+      <Stack.Screen
+        options={{
+          ...props.options,
+          animation: "slide_from_right",
+        }}
+      />
       <StatusBar animated style={theme.dark ? "light" : "dark"} />
       {props.loading ? <LoadingIndicator /> : props.children}
 

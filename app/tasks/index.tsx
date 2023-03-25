@@ -249,11 +249,11 @@ const Tasks = () => {
 
   return (
     <Screen
+      options={{ title: title }}
       loading={state.loading}
       message={message}
       displayMessage={displayMessage}
       onDismissMessage={() => setDisplayMessage(false)}
-      options={{ title: title, animation: "slide_from_right" }}
     >
       <View style={Styles.screen}>
         {state.tasks.length === 0 && state.completedTasks.length === 0 ? (

@@ -106,9 +106,9 @@ const Home = () => {
 
   return (
     <Screen
+      options={{ title: "Tasks" }}
       loading={state.loading}
       message={message}
-      options={{ title: "Tasks" }}
       displayMessage={displayMessage}
       onDismissMessage={() => setDisplayMessage(false)}
     >

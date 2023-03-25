@@ -65,11 +65,11 @@ const StarredTasks = () => {
 
   return (
     <Screen
+      options={{ title: "Completed Tasks" }}
       loading={state.loading}
       message={message}
       displayMessage={displayMessage}
       onDismissMessage={() => setDisplayMessage(false)}
-      options={{ title: "Completed Tasks", animation: "slide_from_right" }}
     >
       <View style={Styles.screen}>
         {state.tasks.length === 0 ? (

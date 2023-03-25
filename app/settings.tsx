@@ -56,11 +56,11 @@ const Settings = () => {
 
   return (
     <Screen
+      options={{ title: "Settings" }}
       loading={state.loading}
       message={message}
       displayMessage={displayMessage}
       onDismissMessage={() => setDisplayMessage(false)}
-      options={{ title: "Settings", animation: "slide_from_right" }}
     >
       <View style={Styles.screen}>
         <List.Section title="Theme">
