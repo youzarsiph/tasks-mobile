@@ -3,163 +3,50 @@
  */
 
 import React from "react";
-import { View } from "react-native";
-import * as SQLite from "expo-sqlite";
-import { useRouter } from "expo-router";
-import { FlashList } from "@shopify/flash-list";
-import { Button, FAB, List, Text, TextInput } from "react-native-paper";
-import { DB } from "../utils";
-import Styles from "../styles";
-import { ListTypeState } from "../types";
-import { Screen, TaskList, Modal } from "../components";
+import { BottomNavigation, useTheme } from "react-native-paper";
+import { CompletedTasks, Home, StarredTasks } from "../screens";
 
-// Open the db
-const db = SQLite.openDatabase("tasks.db");
+const HomeScreen = () => {
+  // Theme
+  const theme = useTheme();
 
-const Home = () => {
-  // Router
-  const router = useRouter();
+  const [index, setIndex] = React.useState(0);
+  const [routes] = React.useState([
+    {
+      key: "home",
+      title: "Home",
+      focusedIcon: "home",
+      unfocusedIcon: "home-outline",
+    },
+    {
+      key: "starred",
+      title: "Starred",
+      focusedIcon: "star",
+      unfocusedIcon: "star-outline",
+    },
+    {
+      key: "completed",
+      title: "Completed",
+      focusedIcon: "checkbox-marked-circle",
+      unfocusedIcon: "checkbox-marked-circle-outline",
+    },
+  ]);
 
-  // State
-  const [state, setState] = React.useState<ListTypeState>({
-    loading: true,
-    lists: [],
+  const renderScene = BottomNavigation.SceneMap({
+    home: Home,
+    starred: StarredTasks,
+    completed: CompletedTasks,
   });
 
-  // Message
-  const [message, setMessage] = React.useState<string>("");
-  const [displayMessage, setDisplayMessage] = React.useState<boolean>(false);
-
-  // Modal
-  const [displayModal, setDisplayModal] = React.useState<boolean>(false);
-
-  // Reload trigger
-  const [reload, setReload] = React.useState<boolean>(false);
-
-  // Load task lists
-  React.useEffect(() => {
-    db.transaction((tx) => {
-      tx.executeSql(
-        "SELECT id, name, created_at as createdAt, updated_at as updatedAt FROM list",
-        [],
-        (_, { rows }) => {
-          // Set data and hide activity indicator
-          setState({ lists: rows._array, loading: false });
-        },
-        (_, { message }) => {
-          console.log(`Error: ${message}`);
-
-          return true;
-        }
-      );
-    });
-  }, [reload]);
-
-  const NewListModal = () => {
-    // List name
-    const [name, setName] = React.useState<string>("");
-
-    return (
-      <Modal visible={displayModal} onDismiss={() => setDisplayModal(false)}>
-        <Text variant="titleLarge">Create New List</Text>
-        <TextInput
-          value={name}
-          mode="outlined"
-          label={"New List"}
-          placeholder={"Enter list name"}
-          onChangeText={(value) => setName(value)}
-          maxLength={32}
-          right={<TextInput.Affix text={`${32 - name.length}`} />}
-        />
-
-        <Button
-          mode="contained"
-          disabled={name === ""}
-          onPress={() => {
-            DB.createList(
-              db,
-              name,
-              () => {
-                // Clear TextInput
-                setName("");
-
-                // Display success message, reload data and hide modal
-                setMessage("List created");
-                setDisplayMessage(true);
-                setDisplayModal(false);
-                setReload(!reload);
-              },
-              () => {
-                // Display error message and hide modal
-                setMessage(message);
-                setDisplayMessage(true);
-                setDisplayModal(false);
-              }
-            );
-          }}
-        >
-          Save
-        </Button>
-      </Modal>
-    );
-  };
-
   return (
-    <Screen
-      options={{ title: "Tasks" }}
-      loading={state.loading}
-      message={message}
-      displayMessage={displayMessage}
-      onDismissMessage={() => setDisplayMessage(false)}
-    >
-      <View style={Styles.screen}>
-        {state.lists.length === 0 ? (
-          <View style={Styles.fullScreen}>
-            <Text variant="displaySmall">Welcome to Tasks</Text>
-          </View>
-        ) : (
-          <List.Section title="Task lists" style={Styles.screen}>
-            <List.Item
-              title="Starred Tasks"
-              onPress={() => router.push("tasks/starred")}
-              right={(props) => <List.Icon {...props} icon={"star"} />}
-            />
-            <List.Item
-              title="Completed Tasks"
-              onPress={() => router.push("tasks/completed")}
-              right={(props) => <List.Icon {...props} icon={"check"} />}
-            />
-
-            <FlashList
-              data={state.lists}
-              estimatedItemSize={100}
-              renderItem={({ item }) => (
-                <TaskList
-                  item={item}
-                  onPress={() =>
-                    router.push({
-                      pathname: "tasks/",
-                      params: { id: item.id, title: item.name },
-                    })
-                  }
-                />
-              )}
-            />
-          </List.Section>
-        )}
-
-        <FAB
-          mode="flat"
-          icon="plus"
-          size="medium"
-          onPress={() => setDisplayModal(true)}
-          style={{ position: "absolute", right: 16, bottom: 16 }}
-        />
-
-        <NewListModal />
-      </View>
-    </Screen>
+    <BottomNavigation
+      onIndexChange={setIndex}
+      renderScene={renderScene}
+      sceneAnimationType="shifting"
+      navigationState={{ index, routes }}
+      barStyle={{ backgroundColor: theme.colors.elevation.level1 }}
+    />
   );
 };
 
-export default Home;
+export default HomeScreen;

@@ -1,22 +1,22 @@
 /**
- * Completed Tasks Screen
+ * Starred Tasks Screen
  */
 
 import React from "react";
-import { View } from "react-native";
 import * as SQLite from "expo-sqlite";
 import { useRouter } from "expo-router";
-import { List, Text } from "react-native-paper";
 import { FlashList } from "@shopify/flash-list";
-import { DB } from "../../utils";
-import Styles from "../../styles";
-import { TaskType, State } from "../../types";
-import { Screen, Task } from "../../components";
+import { RefreshControl, View } from "react-native";
+import { List, Text, useTheme } from "react-native-paper";
+import { DB } from "../utils";
+import Styles from "../styles";
+import { TaskType, State } from "../types";
+import { Screen, Task } from "../components";
 
 // Open the db
 const db = SQLite.openDatabase("tasks.db");
 
-interface CompletedState extends State {
+interface StarredState extends State {
   tasks: TaskType[];
 }
 
@@ -24,8 +24,11 @@ const StarredTasks = () => {
   // Router
   const router = useRouter();
 
+  // Theme
+  const theme = useTheme();
+
   // State
-  const [state, setState] = React.useState<CompletedState>({
+  const [state, setState] = React.useState<StarredState>({
     loading: true,
     tasks: [],
   });
@@ -34,6 +37,9 @@ const StarredTasks = () => {
   const [message, setMessage] = React.useState<string>("");
   const [displayMessage, setDisplayMessage] = React.useState<boolean>(false);
 
+  // Refresh data
+  const [refreshing, setRefreshing] = React.useState(false);
+
   // Reload trigger
   const [reload, setReload] = React.useState<boolean>(false);
 
@@ -41,10 +47,12 @@ const StarredTasks = () => {
   React.useEffect(() => {
     db.transaction((tx) => {
       tx.executeSql(
-        `SELECT id, title, starred, completed, description, created_at as createdAt, updated_at as updatedAt FROM task WHERE completed = "TRUE"`,
+        `SELECT id, title, starred, completed, description, created_at as createdAt, updated_at as updatedAt FROM task WHERE completed != "TRUE" AND starred = "TRUE"`,
         [],
         (_, { rows }) => {
           setState({ loading: false, tasks: rows._array });
+
+          setRefreshing(false);
         },
         (_, { message }) => {
           // Display error message
@@ -65,7 +73,6 @@ const StarredTasks = () => {
 
   return (
     <Screen
-      options={{ title: "Completed Tasks" }}
       loading={state.loading}
       message={message}
       displayMessage={displayMessage}
@@ -74,16 +81,29 @@ const StarredTasks = () => {
       <View style={Styles.screen}>
         {state.tasks.length === 0 ? (
           <View style={[Styles.fullScreen, { rowGap: 32 }]}>
-            <Text variant="titleLarge">No completed tasks</Text>
+            <Text variant="titleLarge">No starred tasks</Text>
             <Text style={{ marginHorizontal: 32, textAlign: "center" }}>
-              Your completed tasks will appear here
+              Mark important tasks with a star so you can easily find them here
             </Text>
           </View>
         ) : (
-          <List.Section style={Styles.screen}>
+          <List.Section title="Starred Tasks" style={Styles.screen}>
             <FlashList
               data={state.tasks}
               estimatedItemSize={100}
+              keyExtractor={(item) => `${item.id}`}
+              refreshControl={
+                <RefreshControl
+                  refreshing={refreshing}
+                  colors={[theme.colors.primary]}
+                  progressBackgroundColor={theme.colors.background}
+                  onRefresh={() => {
+                    setRefreshing(true);
+
+                    setReload(!reload);
+                  }}
+                />
+              }
               renderItem={({ item }) => (
                 <Task
                   item={item}

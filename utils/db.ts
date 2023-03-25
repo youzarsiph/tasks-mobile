@@ -35,7 +35,7 @@ const updateList = (
 ) => {
   db.transaction((tx) => {
     tx.executeSql(
-      "UPDATE list SET name = ? WHERE id = ?; COMMIT;",
+      "UPDATE list SET name = ? WHERE id = ?;",
       [list.name, list.id],
       (_, data) => callback(),
       (_, { message }) => {
@@ -57,7 +57,7 @@ const deleteList = (
 ) => {
   db.transaction((tx) => {
     tx.executeSql(
-      "DELETE FROM list WHERE id = ?; COMMIT;",
+      "DELETE FROM list WHERE id = ?;",
       [listId],
       (_, data) => callback(),
       (_, { message }) => {

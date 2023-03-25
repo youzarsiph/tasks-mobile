@@ -3,11 +3,18 @@
  */
 
 import React from "react";
-import { View } from "react-native";
 import * as SQLite from "expo-sqlite";
 import { FlashList } from "@shopify/flash-list";
+import { RefreshControl, View } from "react-native";
 import { useRouter, useSearchParams } from "expo-router";
-import { Button, IconButton, List, Text, TextInput } from "react-native-paper";
+import {
+  Button,
+  IconButton,
+  List,
+  Text,
+  TextInput,
+  useTheme,
+} from "react-native-paper";
 import { DB } from "../../utils";
 import Styles from "../../styles";
 import { Params, TaskType, TaskTypeState } from "../../types";
@@ -19,6 +26,9 @@ const db = SQLite.openDatabase("tasks.db");
 const Tasks = () => {
   // Router
   const router = useRouter();
+
+  // Theme
+  const theme = useTheme();
 
   // List details
   const { id, title } = useSearchParams<Params>();
@@ -42,12 +52,11 @@ const Tasks = () => {
   const [displayRenameListModal, setDisplayRenameListModal] =
     React.useState<boolean>(false);
 
-  // Completed tasks accordion
-  const [displayCompletedTasks, setDisplayCompletedTasks] =
-    React.useState<boolean>(false);
-
   // FAB actions
   const [displayActions, setDisplayActions] = React.useState<boolean>(false);
+
+  // Refresh data
+  const [refreshing, setRefreshing] = React.useState(false);
 
   // Reload trigger
   const [reload, setReload] = React.useState<boolean>(false);
@@ -92,6 +101,8 @@ const Tasks = () => {
             tasks: tasks,
             completedTasks: rows._array,
           });
+
+          setRefreshing(false);
         },
         (_, { message }) => {
           // Display error message
@@ -269,10 +280,23 @@ const Tasks = () => {
                 <Text>Nice work!</Text>
               </View>
             ) : (
-              <List.Section style={Styles.screen}>
+              <List.Section title="Tasks" style={Styles.screen}>
                 <FlashList
                   data={state.tasks}
                   estimatedItemSize={100}
+                  keyExtractor={(item) => `${item.id}`}
+                  refreshControl={
+                    <RefreshControl
+                      refreshing={refreshing}
+                      colors={[theme.colors.primary]}
+                      progressBackgroundColor={theme.colors.background}
+                      onRefresh={() => {
+                        setRefreshing(true);
+
+                        setReload(!reload);
+                      }}
+                    />
+                  }
                   renderItem={({ item }) => (
                     <Task
                       item={item}
@@ -332,14 +356,11 @@ const Tasks = () => {
             )}
 
             {state.completedTasks.length === 0 ? undefined : (
-              <List.Accordion
-                expanded={displayCompletedTasks}
-                onPress={() => setDisplayCompletedTasks(!displayCompletedTasks)}
-                title={`Completed (${state.completedTasks.length})`}
-              >
+              <List.Section title={"Completed"} style={Styles.screen}>
                 <FlashList
                   data={state.completedTasks}
                   estimatedItemSize={100}
+                  keyExtractor={(item) => `${item.id}`}
                   renderItem={({ item }) => (
                     <Task
                       item={item}
@@ -368,34 +389,10 @@ const Tasks = () => {
                           }
                         );
                       }}
-                      starCallback={() => {
-                        DB.starTask(
-                          db,
-                          {
-                            id: `${item.id}`,
-                            starred: item.starred !== "TRUE",
-                          },
-                          () => {
-                            // Display success message and reload data
-                            setMessage(
-                              item.starred !== "TRUE"
-                                ? "Task starred"
-                                : "Task removed from starred"
-                            );
-                            setDisplayMessage(true);
-                            setReload(!reload);
-                          },
-                          () => {
-                            // Display error message
-                            setMessage(message);
-                            setDisplayMessage(true);
-                          }
-                        );
-                      }}
                     />
                   )}
                 />
-              </List.Accordion>
+              </List.Section>
             )}
           </>
         )}

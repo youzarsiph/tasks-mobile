@@ -10,7 +10,7 @@ const Task = (props: {
   item: TaskType;
   callback: () => void;
   checkCallback: () => void;
-  starCallback: () => void;
+  starCallback?: () => void;
 }) => {
   // Theme
   const theme = useTheme();
@@ -40,18 +40,24 @@ const Task = (props: {
           }}
         />
       )}
-      right={(properties) => (
-        <IconButton
-          {...properties}
-          icon={starred ? "star" : "star-outline"}
-          iconColor={starred ? theme.colors.primary : undefined}
-          onPress={() => {
-            setStarred(!starred);
+      right={
+        props.starCallback !== undefined
+          ? (properties) => (
+              <IconButton
+                {...properties}
+                icon={starred ? "star" : "star-outline"}
+                iconColor={starred ? theme.colors.primary : undefined}
+                onPress={() => {
+                  setStarred(!starred);
 
-            props.starCallback();
-          }}
-        />
-      )}
+                  if (props.starCallback !== undefined) {
+                    props.starCallback();
+                  }
+                }}
+              />
+            )
+          : undefined
+      }
     />
   );
 };

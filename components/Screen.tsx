@@ -13,6 +13,7 @@ import { ScreenProps } from "../types";
 import LoadingIndicator from "./LoadingIndicator";
 
 export default function Screen(props: ScreenProps) {
+  // Theme
   const theme = useTheme();
 
   return (
