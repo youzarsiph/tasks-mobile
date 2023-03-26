@@ -22,8 +22,10 @@ const Layout = () => {
             header: (props: HeaderProps) => (
               <Header
                 {...props}
-                children={undefined}
-                style={{ backgroundColor: theme.colors.elevation.level1 }}
+                headerProps={{
+                  children: undefined,
+                  style: { backgroundColor: theme.colors.elevation.level1 },
+                }}
               />
             ),
           }}

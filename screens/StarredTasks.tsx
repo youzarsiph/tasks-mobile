@@ -7,7 +7,7 @@ import * as SQLite from "expo-sqlite";
 import { useRouter } from "expo-router";
 import { FlashList } from "@shopify/flash-list";
 import { RefreshControl, View } from "react-native";
-import { List, Text, useTheme } from "react-native-paper";
+import { Button, List, Text, useTheme } from "react-native-paper";
 import { DB } from "../utils";
 import Styles from "../styles";
 import { TaskType, State } from "../types";
@@ -85,6 +85,9 @@ const StarredTasks = () => {
             <Text style={{ marginHorizontal: 32, textAlign: "center" }}>
               Mark important tasks with a star so you can easily find them here
             </Text>
+            <Button mode="contained-tonal" onPress={() => setReload(!reload)}>
+              Refresh
+            </Button>
           </View>
         ) : (
           <List.Section title="Starred Tasks" style={Styles.screen}>
@@ -96,7 +99,7 @@ const StarredTasks = () => {
                 <RefreshControl
                   refreshing={refreshing}
                   colors={[theme.colors.primary]}
-                  progressBackgroundColor={theme.colors.background}
+                  progressBackgroundColor={theme.colors.elevation.level1}
                   onRefresh={() => {
                     setRefreshing(true);
 

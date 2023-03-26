@@ -37,8 +37,10 @@ const Tasks = () => {
   const [state, setState] = React.useState<TaskTypeState>({
     loading: true,
     tasks: [],
-    completedTasks: [],
   });
+
+  // Count of completed tasks
+  const [count, setCount] = React.useState<number>(0);
 
   // Message
   const [message, setMessage] = React.useState<string>("");
@@ -61,27 +63,21 @@ const Tasks = () => {
   // Reload trigger
   const [reload, setReload] = React.useState<boolean>(false);
 
-  // Load data
+  // Load tasks
   React.useEffect(() => {
-    let tasks: TaskType[] = [];
-
     db.transaction((tx) => {
-      // Load tasks
+      // Count of completed tasks
       tx.executeSql(
-        `SELECT id, title, starred, completed, description, created_at as createdAt, updated_at as updatedAt FROM task WHERE completed != "TRUE" AND list_id = ?`,
+        `SELECT COUNT(id) as c FROM task WHERE completed = "TRUE" AND list_id = ?`,
         [`${id}`],
         (_, { rows }) => {
-          tasks = rows._array;
+          // Set data
+          setCount(rows._array[0].c);
         },
         (_, { message }) => {
           // Display error message
           setMessage(message);
           setDisplayMessage(true);
-
-          setState({
-            ...state,
-            loading: false,
-          });
 
           console.log(`Error: ${message}`);
 
@@ -89,17 +85,15 @@ const Tasks = () => {
         }
       );
 
-      // Load completed tasks
       tx.executeSql(
-        `SELECT id, title, starred, completed, description, created_at as createdAt, updated_at as updatedAt FROM task WHERE completed = "TRUE" AND list_id = ?`,
+        `SELECT id, title, starred, completed, description, created_at as createdAt, updated_at as updatedAt FROM task WHERE list_id = ? ORDER BY completed`,
         [`${id}`],
         (_, { rows }) => {
           // Hide activity indicator and set data
           setState({
             ...state,
             loading: false,
-            tasks: tasks,
-            completedTasks: rows._array,
+            tasks: rows._array,
           });
 
           setRefreshing(false);
@@ -108,6 +102,7 @@ const Tasks = () => {
           // Display error message
           setMessage(message);
           setDisplayMessage(true);
+
           setState({
             ...state,
             loading: false,
@@ -258,6 +253,9 @@ const Tasks = () => {
     );
   };
 
+  // First completed task indicator
+  let taskCount = 0;
+
   return (
     <Screen
       options={{ title: title }}
@@ -267,134 +265,106 @@ const Tasks = () => {
       onDismissMessage={() => setDisplayMessage(false)}
     >
       <View style={Styles.screen}>
-        {state.tasks.length === 0 && state.completedTasks.length === 0 ? (
+        {state.tasks.length === 0 ? (
           <View style={[Styles.fullScreen, { rowGap: 32 }]}>
             <Text variant="titleLarge">No tasks yet</Text>
             <Text>Add your tasks and keep track of your success</Text>
           </View>
         ) : (
-          <>
-            {state.tasks.length === 0 ? (
-              <View style={[Styles.fullScreen, { rowGap: 32 }]}>
+          <View style={Styles.screen}>
+            {state.tasks.length === count ? (
+              <View style={{ alignItems: "center", padding: 16, rowGap: 16 }}>
                 <Text variant="titleLarge">All tasks completed</Text>
                 <Text>Nice work!</Text>
               </View>
-            ) : (
-              <List.Section title="Tasks" style={Styles.screen}>
-                <FlashList
-                  data={state.tasks}
-                  estimatedItemSize={100}
-                  keyExtractor={(item) => `${item.id}`}
-                  refreshControl={
-                    <RefreshControl
-                      refreshing={refreshing}
-                      colors={[theme.colors.primary]}
-                      progressBackgroundColor={theme.colors.background}
-                      onRefresh={() => {
-                        setRefreshing(true);
+            ) : undefined}
 
-                        setReload(!reload);
-                      }}
-                    />
-                  }
-                  renderItem={({ item }) => (
-                    <Task
-                      item={item}
-                      callback={() => router.push(`tasks/${item.id}`)}
-                      checkCallback={() => {
-                        DB.checkTask(
-                          db,
-                          {
-                            id: `${item.id}`,
-                            completed: item.completed !== "TRUE",
-                          },
-                          () => {
-                            // Display success message and reload data
-                            setMessage(
-                              item.completed !== "TRUE"
-                                ? "Task completed"
-                                : "Task marked uncompleted"
-                            );
-                            setDisplayMessage(true);
-                            setReload(!reload);
-                          },
-                          () => {
-                            // Display error message
-                            setMessage(message);
-                            setDisplayMessage(true);
-                          }
-                        );
-                      }}
-                      starCallback={() => {
-                        DB.starTask(
-                          db,
-                          {
-                            id: `${item.id}`,
-                            starred: item.starred !== "TRUE",
-                          },
-                          () => {
-                            // Display success message and reload data
-                            setMessage(
-                              item.starred !== "TRUE"
-                                ? "Task starred"
-                                : "Task removed from starred"
-                            );
-                            setDisplayMessage(true);
-                            setReload(!reload);
-                          },
-                          () => {
-                            // Display error message
-                            setMessage(message);
-                            setDisplayMessage(true);
-                          }
-                        );
-                      }}
-                    />
-                  )}
-                />
-              </List.Section>
-            )}
+            <List.Section
+              title={state.tasks.length !== count ? "Tasks" : undefined}
+              style={Styles.screen}
+            >
+              <FlashList
+                data={state.tasks}
+                estimatedItemSize={100}
+                keyExtractor={(item) => `${item.id}`}
+                refreshControl={
+                  <RefreshControl
+                    refreshing={refreshing}
+                    colors={[theme.colors.primary]}
+                    progressBackgroundColor={theme.colors.elevation.level1}
+                    onRefresh={() => {
+                      setRefreshing(true);
 
-            {state.completedTasks.length === 0 ? undefined : (
-              <List.Section title={"Completed"} style={Styles.screen}>
-                <FlashList
-                  data={state.completedTasks}
-                  estimatedItemSize={100}
-                  keyExtractor={(item) => `${item.id}`}
-                  renderItem={({ item }) => (
-                    <Task
-                      item={item}
-                      callback={() => router.push(`tasks/${item.id}`)}
-                      checkCallback={() => {
-                        DB.checkTask(
-                          db,
-                          {
-                            id: `${item.id}`,
-                            completed: item.completed !== "TRUE",
-                          },
-                          () => {
-                            // Display success message and reload data
-                            setMessage(
-                              item.completed !== "TRUE"
-                                ? "Task completed"
-                                : "Task marked uncompleted"
-                            );
-                            setDisplayMessage(true);
-                            setReload(!reload);
-                          },
-                          () => {
-                            // Display error message
-                            setMessage(message);
-                            setDisplayMessage(true);
-                          }
-                        );
-                      }}
-                    />
-                  )}
-                />
-              </List.Section>
-            )}
-          </>
+                      setReload(!reload);
+                    }}
+                  />
+                }
+                renderItem={({ item }) => {
+                  taskCount++;
+
+                  return (
+                    <>
+                      {taskCount === 1 && item.completed === "TRUE" ? (
+                        <List.Subheader>Completed</List.Subheader>
+                      ) : undefined}
+                      <Task
+                        item={item}
+                        callback={() => router.push(`tasks/${item.id}`)}
+                        checkCallback={() => {
+                          DB.checkTask(
+                            db,
+                            {
+                              id: `${item.id}`,
+                              completed: item.completed !== "TRUE",
+                            },
+                            () => {
+                              // Display success message and reload data
+                              setMessage(
+                                item.completed !== "TRUE"
+                                  ? "Task completed"
+                                  : "Task marked uncompleted"
+                              );
+                              setDisplayMessage(true);
+                              setReload(!reload);
+                            },
+                            () => {
+                              // Display error message
+                              setMessage(message);
+                              setDisplayMessage(true);
+                            }
+                          );
+                        }}
+                        starCallback={() => {
+                          DB.starTask(
+                            db,
+                            {
+                              id: `${item.id}`,
+                              starred: item.starred !== "TRUE",
+                            },
+                            () => {
+                              // Display success message and reload data
+                              setMessage(
+                                item.starred !== "TRUE"
+                                  ? "Task starred"
+                                  : "Task removed from starred"
+                              );
+                              setDisplayMessage(true);
+                              setReload(!reload);
+                            },
+                            () => {
+                              // Display error message
+                              setMessage(message);
+                              setDisplayMessage(true);
+                            }
+                          );
+                        }}
+                      />
+                    </>
+                  );
+                }}
+              />
+            </List.Section>
+          </View>
         )}
 
         <Actions

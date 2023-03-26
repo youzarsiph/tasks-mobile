@@ -6,13 +6,15 @@ import React from "react";
 import { Appbar, AppbarHeaderProps, Menu } from "react-native-paper";
 import { NativeStackHeaderProps } from "@react-navigation/native-stack";
 
-interface HeaderProps extends AppbarHeaderProps, NativeStackHeaderProps {}
+interface HeaderProps extends NativeStackHeaderProps {
+  headerProps?: AppbarHeaderProps;
+}
 
 const Header = (props: HeaderProps) => {
   const [visible, setVisible] = React.useState<boolean>(false);
 
   return (
-    <Appbar.Header {...props}>
+    <Appbar.Header {...props.headerProps}>
       {props.back && (
         <Appbar.BackAction onPress={() => props.navigation.goBack()} />
       )}

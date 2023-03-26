@@ -135,7 +135,7 @@ const Home = () => {
                 <RefreshControl
                   refreshing={refreshing}
                   colors={[theme.colors.primary]}
-                  progressBackgroundColor={theme.colors.background}
+                  progressBackgroundColor={theme.colors.elevation.level1}
                   onRefresh={() => {
                     setRefreshing(true);
 

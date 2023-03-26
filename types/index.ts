@@ -24,7 +24,6 @@ interface ListTypeState extends State {
 
 interface TaskTypeState extends State {
   tasks: readonly TaskType[];
-  completedTasks: readonly TaskType[];
 }
 
 type Params = {
