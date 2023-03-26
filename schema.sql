@@ -4,35 +4,15 @@
 CREATE TABLE IF NOT EXISTS "list" (
     "id" integer NOT NULL PRIMARY KEY AUTOINCREMENT,
     "name" varchar(32) NOT NULL,
+    "default" bool NOT NULL DEFAULT FALSE,
     "created_at" datetime NOT NULL DEFAULT now,
     "updated_at" datetime NOT NULL DEFAULT now
 );
---
--- Create model Task
---
-CREATE TABLE IF NOT EXISTS "task" (
-    "id" integer NOT NULL PRIMARY KEY AUTOINCREMENT,
-    "title" varchar(32) NOT NULL,
-    "description" varchar(256) NULL,
-    "starred" bool NOT NULL DEFAULT 0,
-    "completed" bool NOT NULL DEFAULT 0,
-    "created_at" datetime NOT NULL DEFAULT now,
-    "updated_at" datetime NOT NULL DEFAULT now,
-    "list_id" bigint NOT NULL REFERENCES "list" ("id") ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
-);
 
---
 -- Indexes
---
 CREATE INDEX IF NOT EXISTS "list_name_index" ON "list" ("name");
-CREATE INDEX IF NOT EXISTS "task_title_index" ON "task" ("title");
-CREATE INDEX IF NOT EXISTS "task_list_id_index" ON "task" ("list_id");
 
---
 -- Triggers
---
-
--- List table
 CREATE TRIGGER IF NOT EXISTS "list_auto_now" AFTER INSERT
 ON
     "list" FOR EACH ROW
@@ -47,7 +27,26 @@ BEGIN
     UPDATE "list" SET "updated_at" = datetime('now') WHERE "id" = NEW.id;
 END;
 
--- Task table
+--
+-- Create model Task
+--
+CREATE TABLE IF NOT EXISTS "task" (
+    "id" integer NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "title" varchar(32) NOT NULL,
+    "description" varchar(256) NULL,
+    "starred" bool NOT NULL DEFAULT FALSE,
+    "completed" bool NOT NULL DEFAULT FALSE,
+    "due" datetime NULL,
+    "created_at" datetime NOT NULL DEFAULT now,
+    "updated_at" datetime NOT NULL DEFAULT now,
+    "list_id" bigint NOT NULL REFERENCES "list" ("id") ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
+);
+
+-- Indexes
+CREATE INDEX IF NOT EXISTS "task_title_index" ON "task" ("title");
+CREATE INDEX IF NOT EXISTS "task_list_id_index" ON "task" ("list_id");
+
+-- Triggers
 CREATE TRIGGER IF NOT EXISTS "task_auto_now" AFTER INSERT
 ON
     "task" FOR EACH ROW

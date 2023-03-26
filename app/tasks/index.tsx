@@ -15,9 +15,9 @@ import {
   TextInput,
   useTheme,
 } from "react-native-paper";
-import { DB } from "../../utils";
 import Styles from "../../styles";
-import { Params, TaskType, TaskTypeState } from "../../types";
+import { DB, ReloadContext } from "../../utils";
+import { Params, TaskTypeState } from "../../types";
 import { Actions, Modal, Screen, Task } from "../../components";
 
 // Open the db
@@ -47,12 +47,10 @@ const Tasks = () => {
   const [displayMessage, setDisplayMessage] = React.useState<boolean>(false);
 
   // New Task Modal
-  const [displayNewTaskModal, setDisplayNewTaskModal] =
-    React.useState<boolean>(false);
+  const [displayNTModal, setDisplayNTModal] = React.useState<boolean>(false);
 
   // Rename List Modal
-  const [displayRenameListModal, setDisplayRenameListModal] =
-    React.useState<boolean>(false);
+  const [displayRLModal, setDisplayRLModal] = React.useState<boolean>(false);
 
   // FAB actions
   const [displayActions, setDisplayActions] = React.useState<boolean>(false);
@@ -61,7 +59,7 @@ const Tasks = () => {
   const [refreshing, setRefreshing] = React.useState(false);
 
   // Reload trigger
-  const [reload, setReload] = React.useState<boolean>(false);
+  const trigger = React.useContext(ReloadContext);
 
   // Load tasks
   React.useEffect(() => {
@@ -86,7 +84,8 @@ const Tasks = () => {
       );
 
       tx.executeSql(
-        `SELECT id, title, starred, completed, description, created_at as createdAt, updated_at as updatedAt FROM task WHERE list_id = ? ORDER BY completed`,
+        `SELECT id, title, starred, completed, description, created_at as createdAt, updated_at as updatedAt
+        FROM task WHERE list_id = ? ORDER BY starred desc, completed`,
         [`${id}`],
         (_, { rows }) => {
           // Hide activity indicator and set data
@@ -114,19 +113,20 @@ const Tasks = () => {
         }
       );
     });
-  }, [reload]);
+  }, [trigger.reload]);
 
   const NewTaskModal = () => {
     const [localState, setLocalState] = React.useState({
       title: "",
       description: "",
       starred: false,
+      due: undefined,
     });
 
     return (
       <Modal
-        visible={displayNewTaskModal}
-        onDismiss={() => setDisplayNewTaskModal(false)}
+        visible={displayNTModal}
+        onDismiss={() => setDisplayNTModal(false)}
       >
         <Text variant="titleLarge">Create New Task</Text>
 
@@ -159,7 +159,7 @@ const Tasks = () => {
         />
 
         <View
-          style={{ flexDirection: "row", alignItems: "center", columnGap: 16 }}
+          style={{ flexDirection: "row", alignItems: "center", columnGap: 8 }}
         >
           <IconButton
             icon={localState.starred ? "star" : "star-outline"}
@@ -183,14 +183,14 @@ const Tasks = () => {
                   // Display success message, reload data and hide modal
                   setMessage("Task created");
                   setDisplayMessage(true);
-                  setDisplayNewTaskModal(false);
-                  setReload(!reload);
+                  setDisplayNTModal(false);
+                  trigger.setReload();
                 },
                 () => {
                   // Display error message and hide modal
                   setMessage(message);
                   setDisplayMessage(true);
-                  setDisplayNewTaskModal(false);
+                  setDisplayNTModal(false);
                 }
               );
             }}
@@ -210,8 +210,8 @@ const Tasks = () => {
 
     return (
       <Modal
-        visible={displayRenameListModal}
-        onDismiss={() => setDisplayRenameListModal(false)}
+        visible={displayRLModal}
+        onDismiss={() => setDisplayRLModal(false)}
       >
         <Text variant="titleLarge">Rename List</Text>
         <TextInput
@@ -234,14 +234,14 @@ const Tasks = () => {
                 // Display success message, reload data and hide modal
                 setMessage("List renamed");
                 setDisplayMessage(true);
-                setDisplayRenameListModal(false);
-                setReload(!reload);
+                setDisplayRLModal(false);
+                trigger.setReload();
               },
               () => {
                 // Display error message and hide modal
                 setMessage(message);
                 setDisplayMessage(true);
-                setDisplayRenameListModal(false);
+                setDisplayRLModal(false);
               }
             );
           }}
@@ -286,7 +286,9 @@ const Tasks = () => {
               <FlashList
                 data={state.tasks}
                 estimatedItemSize={100}
-                keyExtractor={(item) => `${item.id}`}
+                keyExtractor={(item) =>
+                  `${item.id}:${item.completed}:${item.starred}`
+                }
                 refreshControl={
                   <RefreshControl
                     refreshing={refreshing}
@@ -295,12 +297,14 @@ const Tasks = () => {
                     onRefresh={() => {
                       setRefreshing(true);
 
-                      setReload(!reload);
+                      trigger.setReload();
                     }}
                   />
                 }
                 renderItem={({ item }) => {
-                  taskCount++;
+                  if (item.completed === "TRUE") {
+                    taskCount++;
+                  }
 
                   return (
                     <>
@@ -325,7 +329,7 @@ const Tasks = () => {
                                   : "Task marked uncompleted"
                               );
                               setDisplayMessage(true);
-                              setReload(!reload);
+                              trigger.setReload();
                             },
                             () => {
                               // Display error message
@@ -349,7 +353,7 @@ const Tasks = () => {
                                   : "Task removed from starred"
                               );
                               setDisplayMessage(true);
-                              setReload(!reload);
+                              trigger.setReload();
                             },
                             () => {
                               // Display error message
@@ -377,7 +381,7 @@ const Tasks = () => {
               onPress: () => {
                 // Hide actions and display new task modal
                 setDisplayActions(false);
-                setDisplayNewTaskModal(true);
+                setDisplayNTModal(true);
               },
             },
             {
@@ -386,7 +390,7 @@ const Tasks = () => {
               onPress: () => {
                 // Hide actions and display Update List Modal
                 setDisplayActions(false);
-                setDisplayRenameListModal(true);
+                setDisplayRLModal(true);
               },
             },
             {
@@ -404,6 +408,7 @@ const Tasks = () => {
 
                     setTimeout(() => {
                       router.back();
+                      trigger.setReload();
                     }, 1000);
                   },
                   () => {

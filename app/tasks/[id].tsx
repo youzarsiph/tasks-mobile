@@ -15,8 +15,8 @@ import {
   TextInput,
   useTheme,
 } from "react-native-paper";
-import { DB } from "../../utils";
 import Styles from "../../styles";
+import { DB, ReloadContext } from "../../utils";
 import { Screen, Modal } from "../../components";
 import { Params, State, TaskType } from "../../types";
 
@@ -61,11 +61,10 @@ const TaskDetails = () => {
   const [displayMessage, setDisplayMessage] = React.useState<boolean>(false);
 
   // Update Task Modal
-  const [displayUpdateTaskModal, setDisplayUpdateTaskModal] =
-    React.useState<boolean>(false);
+  const [displayUTModal, setDisplayUTModal] = React.useState<boolean>(false);
 
   // Reload trigger
-  const [reload, setReload] = React.useState<boolean>(false);
+  const trigger = React.useContext(ReloadContext);
 
   // Load task
   React.useEffect(() => {
@@ -89,7 +88,7 @@ const TaskDetails = () => {
         }
       );
     });
-  }, [reload]);
+  }, [trigger.reload]);
 
   const UpdateTaskModal = () => {
     const [localState, setLocalState] = React.useState({
@@ -101,8 +100,8 @@ const TaskDetails = () => {
 
     return (
       <Modal
-        visible={displayUpdateTaskModal}
-        onDismiss={() => setDisplayUpdateTaskModal(false)}
+        visible={displayUTModal}
+        onDismiss={() => setDisplayUTModal(false)}
       >
         <Text variant="titleLarge">Update Task</Text>
 
@@ -122,7 +121,6 @@ const TaskDetails = () => {
           multiline
           mode="outlined"
           maxLength={256}
-          numberOfLines={2}
           value={localState.description}
           label={"Task description"}
           placeholder={"Enter task details"}
@@ -157,6 +155,8 @@ const TaskDetails = () => {
 
           <Button
             mode="contained"
+            style={{ marginLeft: "auto" }}
+            disabled={localState.title === ""}
             onPress={() => {
               DB.updateTask(
                 db,
@@ -171,19 +171,22 @@ const TaskDetails = () => {
                   // Display success message, reload data and hide modal
                   setMessage("Task updated");
                   setDisplayMessage(true);
-                  setDisplayUpdateTaskModal(false);
-                  setReload(!reload);
+                  setDisplayUTModal(false);
+
+                  // Navigate back
+                  setTimeout(() => {
+                    router.back();
+                    trigger.setReload();
+                  }, 1000);
                 },
                 () => {
                   // Display error message and hide modal
                   setMessage(message);
                   setDisplayMessage(true);
-                  setDisplayUpdateTaskModal(false);
+                  setDisplayUTModal(false);
                 }
               );
             }}
-            disabled={localState.title === ""}
-            style={{ marginLeft: "auto" }}
           >
             Save
           </Button>
@@ -241,7 +244,7 @@ const TaskDetails = () => {
                       : "Task marked uncompleted"
                   );
                   setDisplayMessage(true);
-                  setReload(!reload);
+                  trigger.setReload();
                 },
                 () => {
                   // Display error message
@@ -268,7 +271,7 @@ const TaskDetails = () => {
                       : "Task removed from starred"
                   );
                   setDisplayMessage(true);
-                  setReload(!reload);
+                  trigger.setReload();
                 },
                 () => {
                   // Display error message
@@ -283,7 +286,7 @@ const TaskDetails = () => {
           />
           <Appbar.Action
             icon="pencil"
-            onPress={() => setDisplayUpdateTaskModal(true)}
+            onPress={() => setDisplayUTModal(true)}
           />
           <Appbar.Action
             icon="delete"
@@ -292,13 +295,14 @@ const TaskDetails = () => {
                 db,
                 `${state.task.id}`,
                 () => {
-                  // Display success message
+                  // Display success message and trig reload
                   setMessage("Task deleted");
                   setDisplayMessage(true);
 
                   // Navigate back
                   setTimeout(() => {
                     router.back();
+                    trigger.setReload();
                   }, 1000);
                 },
                 () => {

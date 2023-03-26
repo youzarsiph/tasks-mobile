@@ -15,13 +15,15 @@ db.exec([{ sql: "PRAGMA foreign_keys = ON;", args: [] }], false, () => {
 
 // Init the db
 db.transaction((tx) => {
+  // Create list table
   tx.executeSql(
     `
     CREATE TABLE IF NOT EXISTS "list" (
-        "id" integer NOT NULL PRIMARY KEY AUTOINCREMENT,
-        "name" varchar(32) NOT NULL,
-        "created_at" datetime NOT NULL DEFAULT now,
-        "updated_at" datetime NOT NULL DEFAULT now
+      "id" integer NOT NULL PRIMARY KEY AUTOINCREMENT,
+      "name" varchar(32) NOT NULL,
+      "default" bool NOT NULL DEFAULT FALSE,
+      "created_at" datetime NOT NULL DEFAULT now,
+      "updated_at" datetime NOT NULL DEFAULT now
     );
     -- Index
     CREATE INDEX IF NOT EXISTS "list_name_index" ON "list" ("name");
@@ -50,17 +52,20 @@ db.transaction((tx) => {
       return true;
     }
   );
+
+  // Create task table
   tx.executeSql(
     `
     CREATE TABLE IF NOT EXISTS "task" (
-        "id" integer NOT NULL PRIMARY KEY AUTOINCREMENT,
-        "title" varchar(32) NOT NULL,
-        "description" varchar(256) NULL,
-        "starred" bool NOT NULL DEFAULT 0,
-        "completed" bool NOT NULL DEFAULT 0,
-        "created_at" datetime NOT NULL DEFAULT now,
-        "updated_at" datetime NOT NULL DEFAULT now,
-        "list_id" bigint NOT NULL REFERENCES "list" ("id") ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
+      "id" integer NOT NULL PRIMARY KEY AUTOINCREMENT,
+      "title" varchar(32) NOT NULL,
+      "description" varchar(256) NULL,
+      "starred" bool NOT NULL DEFAULT FALSE,
+      "completed" bool NOT NULL DEFAULT FALSE,
+      "due" datetime NULL,
+      "created_at" datetime NOT NULL DEFAULT now,
+      "updated_at" datetime NOT NULL DEFAULT now,
+      "list_id" bigint NOT NULL REFERENCES "list" ("id") ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
     );
     -- Indexes
     CREATE INDEX IF NOT EXISTS "task_title_index" ON "task" ("title");

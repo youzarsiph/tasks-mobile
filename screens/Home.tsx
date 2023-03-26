@@ -7,10 +7,17 @@ import * as SQLite from "expo-sqlite";
 import { useRouter } from "expo-router";
 import { FlashList } from "@shopify/flash-list";
 import { RefreshControl, View } from "react-native";
-import { Button, FAB, List, Text, TextInput, useTheme } from "react-native-paper";
-import { DB } from "../utils";
+import {
+  Button,
+  FAB,
+  List,
+  Text,
+  TextInput,
+  useTheme,
+} from "react-native-paper";
 import Styles from "../styles";
 import { ListTypeState } from "../types";
+import { DB, ReloadContext } from "../utils";
 import { Screen, TaskList, Modal } from "../components";
 
 // Open the db
@@ -33,14 +40,14 @@ const Home = () => {
   const [message, setMessage] = React.useState<string>("");
   const [displayMessage, setDisplayMessage] = React.useState<boolean>(false);
 
-  // Modal
-  const [displayModal, setDisplayModal] = React.useState<boolean>(false);
+  // New List Modal
+  const [displayNLModal, setDisplayNLModal] = React.useState<boolean>(false);
 
   // Refresh data
   const [refreshing, setRefreshing] = React.useState(false);
 
   // Reload trigger
-  const [reload, setReload] = React.useState<boolean>(false);
+  const trigger = React.useContext(ReloadContext);
 
   // Load task lists
   React.useEffect(() => {
@@ -61,14 +68,17 @@ const Home = () => {
         }
       );
     });
-  }, [reload]);
+  }, [trigger.reload]);
 
   const NewListModal = () => {
     // List name
     const [name, setName] = React.useState<string>("");
 
     return (
-      <Modal visible={displayModal} onDismiss={() => setDisplayModal(false)}>
+      <Modal
+        visible={displayNLModal}
+        onDismiss={() => setDisplayNLModal(false)}
+      >
         <Text variant="titleLarge">Create New List</Text>
         <TextInput
           value={name}
@@ -94,14 +104,14 @@ const Home = () => {
                 // Display success message, reload data and hide modal
                 setMessage("List created");
                 setDisplayMessage(true);
-                setDisplayModal(false);
-                setReload(!reload);
+                setDisplayNLModal(false);
+                trigger.setReload();
               },
               () => {
                 // Display error message and hide modal
                 setMessage(message);
                 setDisplayMessage(true);
-                setDisplayModal(false);
+                setDisplayNLModal(false);
               }
             );
           }}
@@ -122,8 +132,12 @@ const Home = () => {
     >
       <View style={Styles.screen}>
         {state.lists.length === 0 ? (
-          <View style={Styles.fullScreen}>
+          <View style={[Styles.fullScreen, { rowGap: 32 }]}>
             <Text variant="displaySmall">Welcome to Tasks</Text>
+            <Text style={{ textAlign: "center", paddingHorizontal: 32 }}>
+              Start your success journey by creating a task list and adding
+              tasks
+            </Text>
           </View>
         ) : (
           <List.Section title="Task Lists" style={Styles.screen}>
@@ -139,7 +153,7 @@ const Home = () => {
                   onRefresh={() => {
                     setRefreshing(true);
 
-                    setReload(!reload);
+                    trigger.setReload();
                   }}
                 />
               }
@@ -162,7 +176,7 @@ const Home = () => {
           mode="flat"
           icon="plus"
           size="medium"
-          onPress={() => setDisplayModal(true)}
+          onPress={() => setDisplayNLModal(true)}
           style={{ position: "absolute", right: 16, bottom: 16 }}
         />
 

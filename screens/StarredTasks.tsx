@@ -8,7 +8,7 @@ import { useRouter } from "expo-router";
 import { FlashList } from "@shopify/flash-list";
 import { RefreshControl, View } from "react-native";
 import { Button, List, Text, useTheme } from "react-native-paper";
-import { DB } from "../utils";
+import { DB, ReloadContext } from "../utils";
 import Styles from "../styles";
 import { TaskType, State } from "../types";
 import { Screen, Task } from "../components";
@@ -41,7 +41,7 @@ const StarredTasks = () => {
   const [refreshing, setRefreshing] = React.useState(false);
 
   // Reload trigger
-  const [reload, setReload] = React.useState<boolean>(false);
+  const trigger = React.useContext(ReloadContext);
 
   // Load starred tasks
   React.useEffect(() => {
@@ -69,7 +69,7 @@ const StarredTasks = () => {
         }
       );
     });
-  }, [reload]);
+  }, [trigger.reload]);
 
   return (
     <Screen
@@ -85,7 +85,7 @@ const StarredTasks = () => {
             <Text style={{ marginHorizontal: 32, textAlign: "center" }}>
               Mark important tasks with a star so you can easily find them here
             </Text>
-            <Button mode="contained-tonal" onPress={() => setReload(!reload)}>
+            <Button mode="contained-tonal" onPress={() => trigger.setReload()}>
               Refresh
             </Button>
           </View>
@@ -94,7 +94,9 @@ const StarredTasks = () => {
             <FlashList
               data={state.tasks}
               estimatedItemSize={100}
-              keyExtractor={(item) => `${item.id}`}
+              keyExtractor={(item) =>
+                `${item.id}:${item.completed}:${item.starred}`
+              }
               refreshControl={
                 <RefreshControl
                   refreshing={refreshing}
@@ -103,7 +105,7 @@ const StarredTasks = () => {
                   onRefresh={() => {
                     setRefreshing(true);
 
-                    setReload(!reload);
+                    trigger.setReload();
                   }}
                 />
               }
@@ -126,7 +128,7 @@ const StarredTasks = () => {
                             : "Task marked uncompleted"
                         );
                         setDisplayMessage(true);
-                        setReload(!reload);
+                        trigger.setReload();
                       },
                       () => {
                         // Display error message
@@ -150,7 +152,7 @@ const StarredTasks = () => {
                             : "Task removed from starred"
                         );
                         setDisplayMessage(true);
-                        setReload(!reload);
+                        trigger.setReload();
                       },
                       () => {
                         // Display error message
