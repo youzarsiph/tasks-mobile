@@ -93,7 +93,7 @@ const CompletedTasks = () => {
           <List.Section title="Completed Tasks" style={Styles.screen}>
             <FlashList
               data={state.tasks}
-              estimatedItemSize={100}
+              estimatedItemSize={68}
               keyExtractor={(item) =>
                 `${item.id}:${item.completed}:${item.starred}`
               }

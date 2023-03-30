@@ -285,7 +285,7 @@ const Tasks = () => {
             >
               <FlashList
                 data={state.tasks}
-                estimatedItemSize={100}
+                estimatedItemSize={68}
                 keyExtractor={(item) =>
                   `${item.id}:${item.completed}:${item.starred}`
                 }

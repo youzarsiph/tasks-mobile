@@ -143,7 +143,7 @@ const Home = () => {
           <List.Section title="Task Lists" style={Styles.screen}>
             <FlashList
               data={state.lists}
-              estimatedItemSize={100}
+              estimatedItemSize={52}
               keyExtractor={(item) => `${item.id}`}
               refreshControl={
                 <RefreshControl
