@@ -3,7 +3,7 @@
  */
 
 import React from "react";
-import { Stack } from "expo-router";
+import { Stack, SplashScreen } from "expo-router";
 import { Provider } from "react-native-paper";
 import { ThemeProvider } from "@react-navigation/native";
 import getTheme from "../theme";
@@ -17,6 +17,19 @@ const Layout = () => {
 
   // Reload trigger
   const [reload, setReload] = React.useState<boolean>(false);
+
+  const [themeLoaded, setThemeLoaded] = React.useState<boolean>(false);
+
+  React.useEffect(() => {
+    // Display the splash screen while loading theme
+    setTimeout(() => {
+      setThemeLoaded(true);
+    }, 1000);
+  }, []);
+
+  if (!themeLoaded) {
+    return <SplashScreen />;
+  }
 
   return (
     <Provider theme={theme}>

@@ -21,25 +21,27 @@ const Header = (props: HeaderProps) => {
 
       <Appbar.Content title={props.options.title || props.route.name} />
 
-      <Menu
-        visible={visible}
-        onDismiss={() => setVisible(false)}
-        anchor={
-          <Appbar.Action
-            icon="dots-vertical"
-            onPress={() => setVisible(true)}
+      {props.route.name === "settings" ? undefined : (
+        <Menu
+          visible={visible}
+          onDismiss={() => setVisible(false)}
+          anchor={
+            <Appbar.Action
+              icon="dots-vertical"
+              onPress={() => setVisible(true)}
+            />
+          }
+        >
+          <Menu.Item
+            title="Settings"
+            leadingIcon={"cog"}
+            onPress={() => {
+              setVisible(false);
+              props.navigation.navigate("settings");
+            }}
           />
-        }
-      >
-        <Menu.Item
-          title="Settings"
-          leadingIcon={"cog"}
-          onPress={() => {
-            setVisible(false);
-            props.navigation.navigate("settings");
-          }}
-        />
-      </Menu>
+        </Menu>
+      )}
     </Appbar.Header>
   );
 };
