@@ -39,6 +39,10 @@ const Home = () => {
   // Message
   const [message, setMessage] = React.useState<string>("");
   const [displayMessage, setDisplayMessage] = React.useState<boolean>(false);
+  const showMessage = (message: string) => {
+    setMessage(message);
+    setDisplayMessage(true);
+  };
 
   // New List Modal
   const [displayNLModal, setDisplayNLModal] = React.useState<boolean>(false);
@@ -98,22 +102,19 @@ const Home = () => {
               db,
               name,
               () => {
-                // Clear TextInput
-                setName("");
-
-                // Display success message, reload data and hide modal
-                setMessage("List created");
-                setDisplayMessage(true);
-                setDisplayNLModal(false);
+                // Display message, reload data and clear input
+                showMessage("List created");
                 trigger.setReload();
+                setName("");
               },
               () => {
-                // Display error message and hide modal
-                setMessage(message);
-                setDisplayMessage(true);
-                setDisplayNLModal(false);
+                // Display message
+                showMessage(message);
               }
             );
+
+            // Hide modal
+            setDisplayNLModal(false);
           }}
         >
           Save

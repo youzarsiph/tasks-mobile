@@ -8,9 +8,9 @@ import { useRouter } from "expo-router";
 import { FlashList } from "@shopify/flash-list";
 import { RefreshControl, View } from "react-native";
 import { Button, List, Text, useTheme } from "react-native-paper";
-import { DB, ReloadContext } from "../utils";
 import Styles from "../styles";
 import { TaskType, State } from "../types";
+import { DB, ReloadContext } from "../utils";
 import { Screen, Task } from "../components";
 
 // Open the db
@@ -36,6 +36,10 @@ const StarredTasks = () => {
   // Message
   const [message, setMessage] = React.useState<string>("");
   const [displayMessage, setDisplayMessage] = React.useState<boolean>(false);
+  const showMessage = (message: string) => {
+    setMessage(message);
+    setDisplayMessage(true);
+  };
 
   // Refresh data
   const [refreshing, setRefreshing] = React.useState(false);
@@ -55,9 +59,8 @@ const StarredTasks = () => {
           setRefreshing(false);
         },
         (_, { message }) => {
-          // Display error message
-          setMessage(message);
-          setDisplayMessage(true);
+          // Display message and hide activity indicator
+          showMessage(message);
           setState({
             ...state,
             loading: false,
@@ -121,19 +124,17 @@ const StarredTasks = () => {
                         completed: item.completed !== "TRUE",
                       },
                       () => {
-                        // Display success message and reload data
-                        setMessage(
+                        // Display message and reload data
+                        showMessage(
                           item.completed !== "TRUE"
                             ? "Task completed"
                             : "Task marked uncompleted"
                         );
-                        setDisplayMessage(true);
                         trigger.setReload();
                       },
                       () => {
-                        // Display error message
-                        setMessage(message);
-                        setDisplayMessage(true);
+                        // Display message
+                        showMessage(message);
                       }
                     );
                   }}
@@ -145,19 +146,17 @@ const StarredTasks = () => {
                         starred: item.starred !== "TRUE",
                       },
                       () => {
-                        // Display success message and reload data
-                        setMessage(
+                        // Display message and reload data
+                        showMessage(
                           item.starred !== "TRUE"
                             ? "Task starred"
                             : "Task removed from starred"
                         );
-                        setDisplayMessage(true);
                         trigger.setReload();
                       },
                       () => {
-                        // Display error message
-                        setMessage(message);
-                        setDisplayMessage(true);
+                        // Display message
+                        showMessage(message);
                       }
                     );
                   }}

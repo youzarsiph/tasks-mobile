@@ -8,10 +8,10 @@ import { useRouter } from "expo-router";
 import { FlashList } from "@shopify/flash-list";
 import { RefreshControl, View } from "react-native";
 import { Button, List, Text, useTheme } from "react-native-paper";
-import { DB, ReloadContext } from "../utils";
 import Styles from "../styles";
 import { TaskType, State } from "../types";
 import { Screen, Task } from "../components";
+import { DB, ReloadContext } from "../utils";
 
 // Open the db
 const db = SQLite.openDatabase("tasks.db");
@@ -36,6 +36,10 @@ const CompletedTasks = () => {
   // Message
   const [message, setMessage] = React.useState<string>("");
   const [displayMessage, setDisplayMessage] = React.useState<boolean>(false);
+  const showMessage = (message: string) => {
+    setMessage(message);
+    setDisplayMessage(true);
+  };
 
   // Refresh data
   const [refreshing, setRefreshing] = React.useState(false);
@@ -55,9 +59,8 @@ const CompletedTasks = () => {
           setRefreshing(false);
         },
         (_, { message }) => {
-          // Display error message
-          setMessage(message);
-          setDisplayMessage(true);
+          // Display message and hide activity indicator
+          showMessage(message);
           setState({
             ...state,
             loading: false,
@@ -121,19 +124,17 @@ const CompletedTasks = () => {
                         completed: item.completed !== "TRUE",
                       },
                       () => {
-                        // Display success message and reload data
-                        setMessage(
+                        // Display message and reload data
+                        showMessage(
                           item.completed !== "TRUE"
                             ? "Task completed"
                             : "Task marked uncompleted"
                         );
-                        setDisplayMessage(true);
                         trigger.setReload();
                       },
                       () => {
-                        // Display error message
-                        setMessage(message);
-                        setDisplayMessage(true);
+                        // Display message
+                        showMessage(message);
                       }
                     );
                   }}

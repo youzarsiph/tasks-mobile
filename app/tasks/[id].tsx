@@ -59,6 +59,10 @@ const TaskDetails = () => {
   // Message
   const [message, setMessage] = React.useState<string>("");
   const [displayMessage, setDisplayMessage] = React.useState<boolean>(false);
+  const showMessage = (message: string) => {
+    setMessage(message);
+    setDisplayMessage(true);
+  };
 
   // Update Task Modal
   const [displayUTModal, setDisplayUTModal] = React.useState<boolean>(false);
@@ -77,9 +81,8 @@ const TaskDetails = () => {
           setState({ ...state, loading: false, task: rows._array[0] });
         },
         (_, { message }) => {
-          // Display error message
-          setMessage(message);
-          setDisplayMessage(true);
+          // Display message
+          showMessage(message);
           setState({ ...state, loading: false });
 
           console.log(`Error: ${message}`);
@@ -168,10 +171,8 @@ const TaskDetails = () => {
                   completed: localState.completed,
                 },
                 () => {
-                  // Display success message, reload data and hide modal
-                  setMessage("Task updated");
-                  setDisplayMessage(true);
-                  setDisplayUTModal(false);
+                  // Display and reload data
+                  showMessage("Task updated");
 
                   // Navigate back
                   setTimeout(() => {
@@ -180,12 +181,13 @@ const TaskDetails = () => {
                   }, 1000);
                 },
                 () => {
-                  // Display error message and hide modal
-                  setMessage(message);
-                  setDisplayMessage(true);
-                  setDisplayUTModal(false);
+                  // Display message
+                  showMessage(message);
                 }
               );
+
+              // Hide modal
+              setDisplayUTModal(false);
             }}
           >
             Save
@@ -237,19 +239,17 @@ const TaskDetails = () => {
                   completed: state.task.completed !== "TRUE",
                 },
                 () => {
-                  // Display success message and reload data
-                  setMessage(
+                  // Display message and reload data
+                  showMessage(
                     state.task.completed !== "TRUE"
                       ? "Task completed"
                       : "Task marked uncompleted"
                   );
-                  setDisplayMessage(true);
                   trigger.setReload();
                 },
                 () => {
-                  // Display error message
-                  setMessage(message);
-                  setDisplayMessage(true);
+                  // Display message
+                  showMessage(message);
                 }
               );
             }}
@@ -264,19 +264,17 @@ const TaskDetails = () => {
                   starred: state.task.starred !== "TRUE",
                 },
                 () => {
-                  // Display success message and reload data
-                  setMessage(
+                  // Display message and reload data
+                  showMessage(
                     state.task.starred !== "TRUE"
                       ? "Task starred"
                       : "Task removed from starred"
                   );
-                  setDisplayMessage(true);
                   trigger.setReload();
                 },
                 () => {
-                  // Display error message
-                  setMessage(message);
-                  setDisplayMessage(true);
+                  // Update message
+                  showMessage(message);
                 }
               );
             }}
@@ -295,9 +293,8 @@ const TaskDetails = () => {
                 db,
                 `${state.task.id}`,
                 () => {
-                  // Display success message and trig reload
-                  setMessage("Task deleted");
-                  setDisplayMessage(true);
+                  // Display message and trig reload
+                  showMessage("Task deleted");
 
                   // Navigate back
                   setTimeout(() => {
@@ -306,9 +303,8 @@ const TaskDetails = () => {
                   }, 1000);
                 },
                 () => {
-                  // Display error message
-                  setMessage(message);
-                  setDisplayMessage(true);
+                  // Display message
+                  showMessage(message);
                 }
               );
             }}

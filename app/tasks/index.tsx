@@ -45,6 +45,10 @@ const Tasks = () => {
   // Message
   const [message, setMessage] = React.useState<string>("");
   const [displayMessage, setDisplayMessage] = React.useState<boolean>(false);
+  const showMessage = (message: string) => {
+    setMessage(message);
+    setDisplayMessage(true);
+  };
 
   // New Task Modal
   const [displayNTModal, setDisplayNTModal] = React.useState<boolean>(false);
@@ -73,9 +77,8 @@ const Tasks = () => {
           setCount(rows._array[0].c);
         },
         (_, { message }) => {
-          // Display error message
-          setMessage(message);
-          setDisplayMessage(true);
+          // Display message
+          showMessage(message);
 
           console.log(`Error: ${message}`);
 
@@ -98,9 +101,8 @@ const Tasks = () => {
           setRefreshing(false);
         },
         (_, { message }) => {
-          // Display error message
-          setMessage(message);
-          setDisplayMessage(true);
+          // Display message
+          showMessage(message);
 
           setState({
             ...state,
@@ -180,19 +182,18 @@ const Tasks = () => {
                   listId: `${id}`,
                 },
                 () => {
-                  // Display success message, reload data and hide modal
-                  setMessage("Task created");
-                  setDisplayMessage(true);
-                  setDisplayNTModal(false);
+                  // Display message and reload data
+                  showMessage("Task created");
                   trigger.setReload();
                 },
                 () => {
-                  // Display error message and hide modal
-                  setMessage(message);
-                  setDisplayMessage(true);
-                  setDisplayNTModal(false);
+                  // Display message
+                  showMessage(message);
                 }
               );
+
+              // Hide modal
+              setDisplayNTModal(false);
             }}
             disabled={localState.title === ""}
             style={{ marginLeft: "auto" }}
@@ -231,19 +232,18 @@ const Tasks = () => {
               db,
               { id: `${id}`, name: name },
               () => {
-                // Display success message, reload data and hide modal
-                setMessage("List renamed");
-                setDisplayMessage(true);
-                setDisplayRLModal(false);
+                // Display message and reload data
+                showMessage("List renamed");
                 trigger.setReload();
               },
               () => {
-                // Display error message and hide modal
-                setMessage(message);
-                setDisplayMessage(true);
-                setDisplayRLModal(false);
+                // Display message
+                showMessage(message);
               }
             );
+
+            // Hide modal
+            setDisplayRLModal(false);
           }}
           disabled={name === ""}
         >
@@ -322,19 +322,17 @@ const Tasks = () => {
                               completed: item.completed !== "TRUE",
                             },
                             () => {
-                              // Display success message and reload data
-                              setMessage(
+                              // Display message and reload data
+                              showMessage(
                                 item.completed !== "TRUE"
                                   ? "Task completed"
                                   : "Task marked uncompleted"
                               );
-                              setDisplayMessage(true);
                               trigger.setReload();
                             },
                             () => {
-                              // Display error message
-                              setMessage(message);
-                              setDisplayMessage(true);
+                              // Display message
+                              showMessage(message);
                             }
                           );
                         }}
@@ -346,19 +344,17 @@ const Tasks = () => {
                               starred: item.starred !== "TRUE",
                             },
                             () => {
-                              // Display success message and reload data
-                              setMessage(
+                              // Display message and reload data
+                              showMessage(
                                 item.starred !== "TRUE"
                                   ? "Task starred"
                                   : "Task removed from starred"
                               );
-                              setDisplayMessage(true);
                               trigger.setReload();
                             },
                             () => {
-                              // Display error message
-                              setMessage(message);
-                              setDisplayMessage(true);
+                              // Display message
+                              showMessage(message);
                             }
                           );
                         }}
@@ -401,10 +397,8 @@ const Tasks = () => {
                   db,
                   `${id}`,
                   () => {
-                    // Display success message and hide actions
-                    setMessage("List deleted");
-                    setDisplayMessage(true);
-                    setDisplayActions(false);
+                    // Display message
+                    showMessage("List deleted");
 
                     setTimeout(() => {
                       router.back();
@@ -412,12 +406,13 @@ const Tasks = () => {
                     }, 1000);
                   },
                   () => {
-                    // Display error message and hide actions
-                    setMessage(message);
-                    setDisplayMessage(true);
-                    setDisplayActions(false);
+                    // Display message
+                    showMessage(message);
                   }
                 );
+
+                // Hide actions
+                setDisplayActions(false);
               },
             },
           ]}
