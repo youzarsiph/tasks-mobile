@@ -1,5 +1,5 @@
 /**
- * Starred Tasks Screen
+ * Tasks Due Today Screen
  */
 
 import React from "react";
@@ -13,35 +13,37 @@ import { TasksScreenState } from "../types";
 import { Screen, Task } from "../components";
 import { ReloadContext, TaskAPI, useAuth, useMessage } from "../utils";
 
-const StarredTasks = () => {
+const TasksDueToday = () => {
   // Theme
   const theme = useTheme();
 
   // Router
   const router = useRouter();
 
-  // Message
-  const { showMessage } = useMessage();
-
   // Auth token
   const { token } = useAuth();
 
-  // Refresh data
-  const [refreshing, setRefreshing] = React.useState(false);
+  // Message
+  const { showMessage } = useMessage();
 
   // Reload trigger
   const trigger = React.useContext(ReloadContext);
 
+  // Refresh data
+  const [refreshing, setRefreshing] = React.useState(false);
+
   // State
   const [state, setState] = React.useState<TasksScreenState>({
-    loading: true,
     data: [],
+    loading: true,
   });
 
   // Load starred tasks
   React.useEffect(() => {
+    let date = new Date().toISOString().split("T")[0];
+
     (async () => {
-      await fetch(`${server}tasks?starred=true&completed=false`, {
+      await fetch(`${server}tasks?search=${date}`, {
         method: "GET",
         headers: {
           Authorization: `Token ${token}`,
@@ -73,12 +75,13 @@ const StarredTasks = () => {
       <View style={Styles.screen}>
         {state.data.length === 0 ? (
           <View style={Styles.welcome}>
-            <Text variant="titleLarge">No starred tasks</Text>
+            {/* TODO: Change the design */}
+            <Text variant="titleLarge">No tasks due today!</Text>
             <Text variant="bodyLarge" style={Styles.lead}>
-              Mark important tasks with a star so you can easily find them here
+              Your tasks due today will appear here
             </Text>
             <Button
-              mode="contained"
+              mode="contained-tonal"
               onPress={() => {
                 trigger.setListReload();
                 trigger.setTaskReload();
@@ -88,7 +91,7 @@ const StarredTasks = () => {
             </Button>
           </View>
         ) : (
-          <List.Section title="Starred" style={Styles.screen}>
+          <List.Section title="Due today" style={Styles.screen}>
             <FlashList
               data={state.data}
               estimatedItemSize={68}
@@ -127,25 +130,6 @@ const StarredTasks = () => {
                       );
                     })();
                   }}
-                  starCallback={() => {
-                    (async () => {
-                      await TaskAPI.star(
-                        token,
-                        `${item.id}`,
-                        { starred: item.starred },
-                        () => {
-                          // Display message and reload data
-                          showMessage(
-                            !item.starred
-                              ? "Task starred"
-                              : "Task removed from starred"
-                          );
-                          trigger.setTaskReload();
-                        },
-                        (message) => showMessage(message)
-                      );
-                    })();
-                  }}
                 />
               )}
             />
@@ -156,4 +140,4 @@ const StarredTasks = () => {
   );
 };
 
-export default StarredTasks;
+export default TasksDueToday;

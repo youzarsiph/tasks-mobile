@@ -9,12 +9,16 @@ import { StatusBar } from "expo-status-bar";
 import { useTheme } from "react-native-paper";
 import Styles from "../styles";
 import Message from "./Message";
+import { useMessage } from "../utils";
 import { ScreenProps } from "../types";
 import LoadingIndicator from "./LoadingIndicator";
 
 export default function Screen(props: ScreenProps) {
   // Theme
   const theme = useTheme();
+
+  // Messages
+  const Messages = useMessage();
 
   return (
     <View style={Styles.screen}>
@@ -28,9 +32,9 @@ export default function Screen(props: ScreenProps) {
       {props.loading ? <LoadingIndicator /> : props.children}
 
       <Message
-        message={props.message}
-        visible={props.displayMessage}
-        onDismiss={() => props.onDismissMessage()}
+        message={Messages.message}
+        visible={Messages.visible}
+        onDismiss={() => Messages.setVisible(false)}
       />
     </View>
   );

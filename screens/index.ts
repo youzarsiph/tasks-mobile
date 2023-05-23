@@ -2,8 +2,9 @@
  * Screens
  */
 
-import CompletedTasks from "./CompletedTasks";
+import TasksDueToday from "./TasksDueToday";
 import Home from "./Home";
+import Profile from "./Profile";
 import StarredTasks from "./StarredTasks";
 
-export { Home, StarredTasks, CompletedTasks };
+export { TasksDueToday, Home, Profile, StarredTasks };

@@ -3,318 +3,251 @@
  */
 
 import React from "react";
-import { View } from "react-native";
 import * as SQLite from "expo-sqlite";
+import { View, StyleSheet } from "react-native";
 import { useRouter, useSearchParams } from "expo-router";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import {
-  Appbar,
-  Button,
-  IconButton,
-  Text,
-  TextInput,
-  useTheme,
-} from "react-native-paper";
+import { Button, List, ProgressBar, Text } from "react-native-paper";
 import Styles from "../../styles";
-import { DB, ReloadContext } from "../../utils";
-import { Screen, Modal } from "../../components";
-import { Params, State, TaskType } from "../../types";
+import { server } from "../../data.env";
+import { UpdateTask } from "../../components/modals";
+import { HeaderProps, Params, TaskScreenState } from "../../types";
+import { Header, Screen, ConfirmationDialog } from "../../components";
+import {
+  ReloadContext,
+  TaskAPI,
+  calculateDuration,
+  useAuth,
+  useMessage,
+} from "../../utils";
 
-const BOTTOM_APPBAR_HEIGHT = 80;
-
-// Open the db
-const db = SQLite.openDatabase("tasks.db");
-
-interface DetailsState extends State {
-  task: TaskType;
-}
-
+// Open db
+const db = SQLite.openDatabase("taskLists.db");
 const TaskDetails = () => {
-  // Task details
-  const { id } = useSearchParams<Params>();
-
   // Router
   const router = useRouter();
 
-  // Theme
-  const theme = useTheme();
-
-  // Insets
-  const { bottom } = useSafeAreaInsets();
-
-  // State
-  const [state, setState] = React.useState<DetailsState>({
-    loading: true,
-    task: {
-      id: 1,
-      title: "Task title",
-      description: "Task description",
-      starred: "FALSE",
-      completed: "FALSE",
-      createdAt: Date(),
-      updatedAt: Date(),
-    },
-  });
+  // Auth token
+  const { token } = useAuth();
 
   // Message
-  const [message, setMessage] = React.useState<string>("");
-  const [displayMessage, setDisplayMessage] = React.useState<boolean>(false);
-  const showMessage = (message: string) => {
-    setMessage(message);
-    setDisplayMessage(true);
-  };
+  const { showMessage } = useMessage();
 
-  // Update Task Modal
-  const [displayUTModal, setDisplayUTModal] = React.useState<boolean>(false);
+  // Task id
+  const { id } = useSearchParams<Params>();
 
   // Reload trigger
   const trigger = React.useContext(ReloadContext);
 
+  // Update Task Modal
+  const [displayUTModal, setDisplayUTModal] = React.useState<boolean>(false);
+
+  // Task delete confirmation dialog
+  const [displayDCDialog, setDisplayDCDialog] = React.useState<boolean>(false);
+
+  // State
+  const [state, setState] = React.useState<TaskScreenState>({
+    loading: true,
+    data: {
+      id: 1,
+      title: "Task title",
+      description: "Task description",
+      deadline: Date(),
+      starred: false,
+      completed: false,
+      completion_rate: 0,
+      created_at: Date(),
+      updated_at: Date(),
+    },
+  });
+
   // Load task
   React.useEffect(() => {
-    db.transaction((tx) => {
-      tx.executeSql(
-        `SELECT id, title, starred, completed, description, created_at as createdAt, updated_at as updatedAt FROM task WHERE id = ?`,
-        [`${id}`],
-        (_, { rows }) => {
-          // Hide activity indicator
-          setState({ ...state, loading: false, task: rows._array[0] });
+    (async () => {
+      await fetch(`${server}tasks/${id}`, {
+        method: "GET",
+        headers: {
+          Authorization: `Token ${token}`,
         },
-        (_, { message }) => {
-          // Display message
-          showMessage(message);
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          setState({ data: data, loading: false });
+        })
+        .catch((e) => {
           setState({ ...state, loading: false });
+          showMessage(e.message);
+        });
+    })();
+  }, [trigger.taskReload]);
 
-          console.log(`Error: ${message}`);
-
-          return true;
-        }
-      );
-    });
-  }, [trigger.reload]);
-
-  const UpdateTaskModal = () => {
-    const [localState, setLocalState] = React.useState({
-      title: state.task.title,
-      description: state.task.description,
-      starred: state.task.starred === "TRUE",
-      completed: state.task.completed === "TRUE",
-    });
-
-    return (
-      <Modal
-        visible={displayUTModal}
-        onDismiss={() => setDisplayUTModal(false)}
-      >
-        <Text variant="titleLarge">Update Task</Text>
-
-        <TextInput
-          value={localState.title}
-          mode="outlined"
-          maxLength={32}
-          label={"Task title"}
-          placeholder={"Enter task title"}
-          onChangeText={(value) =>
-            setLocalState({ ...localState, title: value })
-          }
-          right={<TextInput.Affix text={`${32 - localState.title.length}`} />}
-        />
-
-        <TextInput
-          multiline
-          mode="outlined"
-          maxLength={256}
-          value={localState.description}
-          label={"Task description"}
-          placeholder={"Enter task details"}
-          onChangeText={(value) =>
-            setLocalState({ ...localState, description: value })
-          }
-          right={
-            <TextInput.Affix text={`${256 - localState.description.length}`} />
-          }
-        />
-
-        <View
-          style={{ flexDirection: "row", alignItems: "center", columnGap: 16 }}
-        >
-          <IconButton
-            icon={
-              localState.completed
-                ? "checkbox-marked"
-                : "checkbox-blank-outline"
-            }
-            onPress={() =>
-              setLocalState({ ...localState, completed: !localState.completed })
-            }
-          />
-
-          <IconButton
-            icon={localState.starred ? "star" : "star-outline"}
-            onPress={() =>
-              setLocalState({ ...localState, starred: !localState.starred })
-            }
-          />
-
-          <Button
-            mode="contained"
-            style={{ marginLeft: "auto" }}
-            disabled={localState.title === ""}
-            onPress={() => {
-              DB.updateTask(
-                db,
-                {
-                  id: `${state.task.id}`,
-                  title: localState.title,
-                  description: localState.description,
-                  starred: localState.starred,
-                  completed: localState.completed,
-                },
-                () => {
-                  // Display and reload data
-                  showMessage("Task updated");
-
-                  // Navigate back
-                  setTimeout(() => {
-                    router.back();
-                    trigger.setReload();
-                  }, 1000);
-                },
-                () => {
-                  // Display message
-                  showMessage(message);
-                }
-              );
-
-              // Hide modal
-              setDisplayUTModal(false);
-            }}
-          >
-            Save
-          </Button>
-        </View>
-      </Modal>
-    );
-  };
+  const deadline = new Date(state.data.deadline || "");
+  const duration = calculateDuration(
+    new Date(state.data.updated_at),
+    new Date(state.data.created_at)
+  );
 
   return (
     <Screen
-      options={{ title: "Task Details" }}
       loading={state.loading}
-      message={message}
-      displayMessage={displayMessage}
-      onDismissMessage={() => setDisplayMessage(false)}
+      options={{
+        title: "Details",
+        header: (props: HeaderProps) => (
+          <Header
+            {...props}
+            updateCallback={() => setDisplayUTModal(true)}
+            deleteCallback={() => setDisplayDCDialog(true)}
+            starCallback={() => {
+              (async () => {
+                await TaskAPI.star(
+                  token,
+                  db,
+                  `${state.data.id}`,
+                  { starred: state.data.starred },
+                  () => {
+                    // Display message and reload data
+                    showMessage(
+                      !state.data.starred
+                        ? "Task starred"
+                        : "Task removed from starred"
+                    );
+
+                    setTimeout(() => {
+                      router.back();
+                      trigger.setTaskReload();
+                    }, 1000);
+                  },
+                  (message) => showMessage(message)
+                );
+              })();
+            }}
+          />
+        ),
+      }}
     >
       <View style={Styles.screen}>
-        <View style={{ rowGap: 32, padding: 16 }}>
-          <Text variant="titleLarge">{state.task.title}</Text>
-          <Text>{state.task.description}</Text>
+        <ProgressBar progress={state.data.completion_rate / 100} />
+        <View style={styles.screen}>
+          <Text variant="titleLarge">{state.data.title}</Text>
+          {state.data.description !== null ? (
+            <Text>{state.data.description}</Text>
+          ) : undefined}
+
+          <List.Section>
+            {state.data.deadline !== null ? (
+              <List.Item
+                title="Deadline"
+                description={`Due ${deadline.toUTCString()}`}
+              />
+            ) : undefined}
+
+            {state.data.completed ? (
+              <List.Item
+                title="Completion Duration"
+                description={`Time taken to complete this task: ${duration}`}
+              />
+            ) : undefined}
+          </List.Section>
         </View>
 
-        <Appbar
-          safeAreaInsets={{ bottom }}
-          style={{
-            position: "absolute",
-            left: 0,
-            right: 0,
-            bottom: 0,
-            height: BOTTOM_APPBAR_HEIGHT + bottom,
-            backgroundColor: theme.colors.elevation.level1,
-          }}
-        >
-          <Appbar.Action
-            color={
-              state.task.completed === "TRUE" ? theme.colors.primary : undefined
-            }
-            icon={
-              state.task.completed === "TRUE"
-                ? "checkbox-marked"
-                : "checkbox-blank-outline"
-            }
+        <View style={styles.bar}>
+          <Button
+            style={{ width: "100%" }}
+            mode={state.data.completed ? "contained" : "contained-tonal"}
             onPress={() => {
-              DB.checkTask(
-                db,
-                {
-                  id: `${state.task.id}`,
-                  completed: state.task.completed !== "TRUE",
-                },
-                () => {
-                  // Display message and reload data
-                  showMessage(
-                    state.task.completed !== "TRUE"
-                      ? "Task completed"
-                      : "Task marked uncompleted"
-                  );
-                  trigger.setReload();
-                },
-                () => {
-                  // Display message
-                  showMessage(message);
-                }
-              );
-            }}
-          />
-          <Appbar.Action
-            icon={state.task.starred === "TRUE" ? "star" : "star-outline"}
-            onPress={() => {
-              DB.starTask(
-                db,
-                {
-                  id: `${state.task.id}`,
-                  starred: state.task.starred !== "TRUE",
-                },
-                () => {
-                  // Display message and reload data
-                  showMessage(
-                    state.task.starred !== "TRUE"
-                      ? "Task starred"
-                      : "Task removed from starred"
-                  );
-                  trigger.setReload();
-                },
-                () => {
-                  // Update message
-                  showMessage(message);
-                }
-              );
-            }}
-            color={
-              state.task.starred === "TRUE" ? theme.colors.primary : undefined
-            }
-          />
-          <Appbar.Action
-            icon="pencil"
-            onPress={() => setDisplayUTModal(true)}
-          />
-          <Appbar.Action
-            icon="delete"
-            onPress={() => {
-              DB.deleteTask(
-                db,
-                `${state.task.id}`,
-                () => {
-                  // Display message and trig reload
-                  showMessage("Task deleted");
+              (async () => {
+                await TaskAPI.check(
+                  token,
+                  db,
+                  `${state.data.id}`,
+                  { completed: state.data.completed },
+                  () => {
+                    // Display message and reload data
+                    showMessage(
+                      !state.data.completed
+                        ? "Task completed"
+                        : "Task marked uncompleted"
+                    );
 
-                  // Navigate back
-                  setTimeout(() => {
-                    router.back();
-                    trigger.setReload();
-                  }, 1000);
-                },
-                () => {
-                  // Display message
-                  showMessage(message);
-                }
-              );
+                    setTimeout(() => {
+                      router.back();
+                      trigger.setTaskReload();
+                    }, 1000);
+                  },
+                  (message) => showMessage(message)
+                );
+              })();
             }}
-          />
-        </Appbar>
+          >
+            {state.data.completed ? "Mark Uncompleted" : "Mark Completed"}
+          </Button>
+        </View>
       </View>
 
-      <UpdateTaskModal />
+      <UpdateTask
+        token={token}
+        visible={displayUTModal}
+        onDismiss={() => setDisplayUTModal(false)}
+        errorCallback={(message) => showMessage(message)}
+        data={{
+          id: `${id}`,
+          title: state.data.title,
+          description: state.data.description,
+          starred: state.data.starred,
+          completed: state.data.completed,
+          completion_rate: state.data.completion_rate,
+        }}
+        callback={() => {
+          // Display and reload data
+          showMessage("Task updated");
+
+          setTimeout(() => {
+            router.back();
+            trigger.setTaskReload();
+          }, 1000);
+        }}
+      />
+
+      <ConfirmationDialog
+        title="Delete Task"
+        message="Are you sure you want to delete this task?"
+        visible={displayDCDialog}
+        onDismiss={() => setDisplayDCDialog(false)}
+        delete={() => {
+          (async () => {
+            await TaskAPI.delete(
+              token,
+              `${state.data.id}`,
+              () => {
+                // Display message and reload data
+                showMessage("Task deleted");
+
+                // Navigate back
+                setTimeout(() => {
+                  router.back();
+                  trigger.setTaskReload();
+                }, 1000);
+              },
+              (message) => showMessage(message)
+            );
+
+            setDisplayDCDialog(false);
+          })();
+        }}
+      />
     </Screen>
   );
 };
+
+const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    gap: 16,
+    padding: 16,
+  },
+  bar: {
+    ...Styles.row,
+    padding: 16,
+  },
+});
 
 export default TaskDetails;

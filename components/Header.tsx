@@ -3,12 +3,8 @@
  */
 
 import React from "react";
-import { Appbar, AppbarHeaderProps, Menu } from "react-native-paper";
-import { NativeStackHeaderProps } from "@react-navigation/native-stack";
-
-interface HeaderProps extends NativeStackHeaderProps {
-  headerProps?: AppbarHeaderProps;
-}
+import { Appbar, Menu } from "react-native-paper";
+import { HeaderProps } from "../types";
 
 const Header = (props: HeaderProps) => {
   const [visible, setVisible] = React.useState<boolean>(false);
@@ -20,6 +16,33 @@ const Header = (props: HeaderProps) => {
       )}
 
       <Appbar.Content title={props.options.title || props.route.name} />
+
+      {props.route.name === "tasks/[id]" ? (
+        <Appbar.Action
+          icon="star"
+          onPress={() =>
+            props.starCallback !== undefined ? props.starCallback() : {}
+          }
+        />
+      ) : undefined}
+
+      {props.route.name === "tasks/index" ||
+      props.route.name === "tasks/[id]" ? (
+        <>
+          <Appbar.Action
+            icon="pencil"
+            onPress={() =>
+              props.updateCallback !== undefined ? props.updateCallback() : {}
+            }
+          />
+          <Appbar.Action
+            icon="delete"
+            onPress={() =>
+              props.deleteCallback !== undefined ? props.deleteCallback() : {}
+            }
+          />
+        </>
+      ) : undefined}
 
       {props.route.name === "settings" ? undefined : (
         <Menu

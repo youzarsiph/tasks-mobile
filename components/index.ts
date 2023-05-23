@@ -2,7 +2,7 @@
  * Components
  */
 
-import Actions from "./Actions";
+import ConfirmationDialog from "./ConfirmationDialog";
 import Header from "./Header";
 import LoadingIndicator from "./LoadingIndicator";
 import Message from "./Message";
@@ -12,7 +12,7 @@ import Task from "./Task";
 import TaskList from "./TaskList";
 
 export {
-  Actions,
+  ConfirmationDialog,
   Header,
   LoadingIndicator,
   Message,

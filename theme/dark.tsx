@@ -6,6 +6,7 @@ import { MD3DarkTheme } from "react-native-paper";
 
 const DarkPinkTheme = {
   ...MD3DarkTheme,
+  roundness: 10,
   colors: {
     primary: "rgb(255, 177, 199)",
     onPrimary: "rgb(101, 0, 49)",
@@ -52,6 +53,7 @@ const DarkPinkTheme = {
 
 const DarkRedTheme = {
   ...MD3DarkTheme,
+  roundness: 10,
   colors: {
     primary: "rgb(255, 180, 171)",
     onPrimary: "rgb(105, 0, 5)",
@@ -98,6 +100,7 @@ const DarkRedTheme = {
 
 const DarkGreenTheme = {
   ...MD3DarkTheme,
+  roundness: 10,
   colors: {
     primary: "rgb(74, 225, 118)",
     onPrimary: "rgb(0, 57, 21)",
@@ -144,6 +147,7 @@ const DarkGreenTheme = {
 
 const DarkBlueTheme = {
   ...MD3DarkTheme,
+  roundness: 10,
   colors: {
     primary: "rgb(183, 196, 255)",
     onPrimary: "rgb(0, 38, 130)",
@@ -190,6 +194,7 @@ const DarkBlueTheme = {
 
 const DarkYellowTheme = {
   ...MD3DarkTheme,
+  roundness: 10,
   colors: {
     primary: "rgb(249, 189, 34)",
     onPrimary: "rgb(64, 45, 0)",
@@ -235,7 +240,7 @@ const DarkYellowTheme = {
 };
 
 const darkTheme = {
-  purple: MD3DarkTheme,
+  purple: { ...MD3DarkTheme, roundness: 10 },
   pink: DarkPinkTheme,
   red: DarkRedTheme,
   green: DarkGreenTheme,

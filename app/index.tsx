@@ -3,13 +3,10 @@
  */
 
 import React from "react";
-import { BottomNavigation, useTheme } from "react-native-paper";
-import { CompletedTasks, Home, StarredTasks } from "../screens";
+import { BottomNavigation } from "react-native-paper";
+import { TasksDueToday, Home, Profile, StarredTasks } from "../screens";
 
 const HomeScreen = () => {
-  // Theme
-  const theme = useTheme();
-
   const [index, setIndex] = React.useState(0);
   const [routes] = React.useState([
     {
@@ -25,17 +22,24 @@ const HomeScreen = () => {
       unfocusedIcon: "star-outline",
     },
     {
-      key: "completed",
-      title: "Completed",
-      focusedIcon: "checkbox-marked-circle",
-      unfocusedIcon: "checkbox-marked-circle-outline",
+      key: "due",
+      title: "Due Today",
+      focusedIcon: "calendar",
+      unfocusedIcon: "calendar-outline",
+    },
+    {
+      key: "profile",
+      title: "Me",
+      focusedIcon: "account",
+      unfocusedIcon: "account-outline",
     },
   ]);
 
   const renderScene = BottomNavigation.SceneMap({
     home: Home,
     starred: StarredTasks,
-    completed: CompletedTasks,
+    due: TasksDueToday,
+    profile: Profile,
   });
 
   return (
@@ -44,7 +48,6 @@ const HomeScreen = () => {
       renderScene={renderScene}
       sceneAnimationType="shifting"
       navigationState={{ index, routes }}
-      barStyle={{ backgroundColor: theme.colors.elevation.level1 }}
     />
   );
 };

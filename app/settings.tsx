@@ -7,25 +7,20 @@ import { StyleSheet, View } from "react-native";
 import * as SecureStore from "expo-secure-store";
 import { Button, List, RadioButton, Surface, Text } from "react-native-paper";
 import Styles from "../styles";
-import { State } from "../types";
+import { useMessage } from "../utils";
 import { Screen } from "../components";
-
-interface SettingsState extends State {
-  theme: string;
-  color: string;
-}
+import { SettingsScreenState } from "../types";
 
 const Settings = () => {
-  // State
-  const [state, setState] = React.useState<SettingsState>({
-    loading: true,
-    theme: "",
-    color: "",
-  });
-
   // Message
-  const [message, setMessage] = React.useState<string>("");
-  const [displayMessage, setDisplayMessage] = React.useState<boolean>(false);
+  const { showMessage } = useMessage();
+
+  // State
+  const [state, setState] = React.useState<SettingsScreenState>({
+    loading: true,
+    theme: "light",
+    color: "purple",
+  });
 
   // Load settings
   React.useEffect(() => {
@@ -34,10 +29,9 @@ const Settings = () => {
       const color = await SecureStore.getItemAsync("color");
 
       setState({
-        ...state,
+        loading: false,
         theme: theme || "light",
         color: color || "purple",
-        loading: false,
       });
     })();
   }, []);
@@ -76,26 +70,8 @@ const Settings = () => {
     },
   ];
 
-  // Apply settings
-  const applySettings = () => {
-    (async () => {
-      await SecureStore.setItemAsync("theme", state.theme);
-      await SecureStore.setItemAsync("color", state.color);
-
-      // Display success message
-      setMessage("Settings applied, restart the app to reflect the changes");
-      setDisplayMessage(true);
-    })();
-  };
-
   return (
-    <Screen
-      options={{ title: "Settings" }}
-      loading={state.loading}
-      message={message}
-      displayMessage={displayMessage}
-      onDismissMessage={() => setDisplayMessage(false)}
-    >
+    <Screen loading={state.loading} options={{ title: "Settings" }}>
       <View style={Styles.screen}>
         <List.Section title="Theme">
           <RadioButton.Group
@@ -116,12 +92,7 @@ const Settings = () => {
               {colors.map((color) => (
                 <Surface
                   key={color.name}
-                  style={[
-                    styles.surface,
-                    {
-                      backgroundColor: color.value,
-                    },
-                  ]}
+                  style={{ ...styles.surface, backgroundColor: color.value }}
                 >
                   <RadioButton
                     value={color.name}
@@ -138,7 +109,20 @@ const Settings = () => {
         </List.Section>
 
         <View style={{ padding: 16 }}>
-          <Button mode="contained" onPress={applySettings}>
+          <Button
+            mode="contained"
+            onPress={() => {
+              (async () => {
+                await SecureStore.setItemAsync("theme", state.theme);
+                await SecureStore.setItemAsync("color", state.color);
+
+                // Display success message
+                showMessage(
+                  "Settings applied, restart the app to reflect the changes"
+                );
+              })();
+            }}
+          >
             Apply Settings
           </Button>
         </View>
@@ -149,20 +133,19 @@ const Settings = () => {
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 16,
-    rowGap: 16,
-    columnGap: 16,
+    gap: 16,
     flexWrap: "wrap",
     flexDirection: "row",
     alignItems: "center",
+    paddingHorizontal: 16,
   },
   surface: {
+    gap: 8,
     width: "30%",
     borderRadius: 16,
     paddingVertical: 16,
     alignItems: "center",
     justifyContent: "center",
-    rowGap: 8,
   },
 });
 

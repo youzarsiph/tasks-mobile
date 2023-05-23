@@ -3,28 +3,38 @@
  */
 
 import React from "react";
-import { Stack, SplashScreen } from "expo-router";
 import { Provider } from "react-native-paper";
+import * as SecureStore from "expo-secure-store";
+import { Stack, SplashScreen } from "expo-router";
 import { ThemeProvider } from "@react-navigation/native";
 import getTheme from "../theme";
 import { Header } from "../components";
-import { ReloadContext } from "../utils";
 import { HeaderProps } from "../components/Header";
+import { AuthProvider, MessageProvider, ReloadContext } from "../utils";
 
 const Layout = () => {
   // Theme
   const theme = getTheme();
 
+  // User auth token
+  const [token, setToken] = React.useState<string>("");
+
   // Reload trigger
-  const [reload, setReload] = React.useState<boolean>(false);
+  const [listReload, setListReload] = React.useState<boolean>(false);
+  const [taskReload, setTaskReload] = React.useState<boolean>(false);
 
   const [themeLoaded, setThemeLoaded] = React.useState<boolean>(false);
 
   React.useEffect(() => {
-    // Display the splash screen while loading theme
-    setTimeout(() => {
-      setThemeLoaded(true);
-    }, 1000);
+    (async () => {
+      const token = await SecureStore.getItemAsync("token");
+      setToken(token || "");
+
+      // Display the splash screen while loading theme
+      setTimeout(() => {
+        setThemeLoaded(true);
+      }, 150);
+    })();
   }, []);
 
   if (!themeLoaded) {
@@ -36,23 +46,21 @@ const Layout = () => {
       <ThemeProvider value={theme}>
         <ReloadContext.Provider
           value={{
-            reload: reload,
-            setReload: () => setReload(!reload),
+            listReload: listReload,
+            setListReload: () => setListReload(!listReload),
+            taskReload: taskReload,
+            setTaskReload: () => setTaskReload(!taskReload),
           }}
         >
-          <Stack
-            screenOptions={{
-              header: (props: HeaderProps) => (
-                <Header
-                  {...props}
-                  headerProps={{
-                    children: undefined,
-                    style: { backgroundColor: theme.colors.elevation.level1 },
-                  }}
-                />
-              ),
-            }}
-          />
+          <AuthProvider token={token}>
+            <MessageProvider>
+              <Stack
+                screenOptions={{
+                  header: (props: HeaderProps) => <Header {...props} />,
+                }}
+              />
+            </MessageProvider>
+          </AuthProvider>
         </ReloadContext.Provider>
       </ThemeProvider>
     </Provider>

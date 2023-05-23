@@ -3,33 +3,50 @@
  */
 
 import React from "react";
-import { NativeStackNavigationOptions } from "@react-navigation/native-stack";
+import { AppbarHeaderProps } from "react-native-paper";
+import {
+  NativeStackHeaderProps,
+  NativeStackNavigationOptions,
+} from "@react-navigation/native-stack";
 
 interface ScreenProps {
-  loading: boolean;
-  message: string;
-  displayMessage: boolean;
-  onDismissMessage: () => void;
+  loading?: boolean;
   options?: NativeStackNavigationOptions;
   children: React.ReactNode | React.ReactNode[];
 }
 
-interface State {
+interface HeaderProps extends NativeStackHeaderProps {
+  headerProps?: AppbarHeaderProps;
+  starCallback?: () => void;
+  updateCallback?: () => void;
+  deleteCallback?: () => void;
+}
+
+interface ScreenState {
   loading: boolean;
 }
 
-interface ListTypeState extends State {
-  lists: readonly ListType[];
+interface HomeScreenState extends ScreenState {
+  data: readonly ListType[];
 }
 
-interface TaskTypeState extends State {
-  tasks: readonly TaskType[];
+interface SettingsScreenState extends ScreenState {
+  theme: string;
+  color: string;
+}
+
+interface TasksScreenState extends ScreenState {
+  data: readonly TaskType[];
+}
+
+interface TaskScreenState extends ScreenState {
+  data: TaskType;
 }
 
 type Params = {
+  // Task id
   id: string;
-  title: string;
-  // reload: boolean;
+  listId: string;
 };
 
 interface Type {
@@ -37,9 +54,10 @@ interface Type {
    * Base type
    */
 
-  id: number;
-  createdAt: string;
-  updatedAt: string;
+  id?: number;
+  created_at: string;
+  updated_at: string;
+  description: string;
 }
 
 interface ListType extends Type {
@@ -48,17 +66,21 @@ interface ListType extends Type {
 
 interface TaskType extends Type {
   title: string;
-  starred: string;
-  completed: string;
-  description: string;
+  list?: ListType;
+  starred: boolean;
+  deadline?: string;
+  completed: boolean;
+  completion_rate: number;
 }
 
 export {
   Params,
   ScreenProps,
+  HeaderProps,
+  HomeScreenState,
+  SettingsScreenState,
+  TaskScreenState,
+  TasksScreenState,
   ListType,
   TaskType,
-  State,
-  ListTypeState,
-  TaskTypeState,
 };

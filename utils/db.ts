@@ -3,216 +3,329 @@
  */
 
 import * as SQLite from "expo-sqlite";
+import { ListType } from "../types";
 
-// List table
-const createList = (
-  db: SQLite.WebSQLDatabase,
-  listName: string,
-  callback: () => void,
-  errorCallback: () => void
-) => {
-  db.transaction((tx) => {
-    tx.executeSql(
-      "INSERT INTO list (name) values (?)",
-      [listName],
-      (_, data) => callback(),
-      (_, { message }) => {
-        errorCallback();
-
-        console.log(`Error: ${message}`);
-
-        return true;
-      }
+const Database = {
+  init: (db: SQLite.WebSQLDatabase) => {
+    // Required for foreign keys
+    db.exec([{ sql: "PRAGMA foreign_keys = ON;", args: [] }], false, () =>
+      console.log("Foreign keys turned on")
     );
-  });
-};
 
-const updateList = (
-  db: SQLite.WebSQLDatabase,
-  list: { id: string; name: string },
-  callback: () => void,
-  errorCallback: () => void
-) => {
-  db.transaction((tx) => {
-    tx.executeSql(
-      "UPDATE list SET name = ? WHERE id = ?;",
-      [list.name, list.id],
-      (_, data) => callback(),
-      (_, { message }) => {
-        errorCallback();
+    // Create tables
+    db.transaction((tx) => {
+      tx.executeSql(
+        `-- Create model List
+        CREATE TABLE IF NOT EXISTS "list" (
+          "id" integer NOT NULL PRIMARY KEY AUTOINCREMENT,
+          "name" varchar(32) NOT NULL,
+          "description" varchar(256) NULL
+        );
 
-        console.log(`Error: ${message}`);
+        -- Indexes
+        CREATE INDEX "list_name_63f9ef60" ON "list" ("name");
+        CREATE INDEX "list_user_id_17a6fe16" ON "list" ("user_id");
 
-        return true;
-      }
-    );
-  });
-};
+        -- Create model Task
+        CREATE TABLE IF NOT EXISTS "task" (
+            "id" integer NOT NULL PRIMARY KEY AUTOINCREMENT,
+            "title" varchar(32) NOT NULL,
+            "description" varchar(256) NULL,
+            "starred" bool NOT NULL DEFAULT 0,
+            "completed" bool NOT NULL DEFAULT 0,
+            "deadline" datetime NULL,
+            "completion_rate" smallint unsigned NOT NULL DEFAULT 0,
+            CONSTRAINT "completion_rate_gte_0" CHECK ("completion_rate" >= 0),
+            CONSTRAINT "completion_rate_lte_100" CHECK ("completion_rate" <= 100),
+            "list_id" bigint NOT NULL REFERENCES "list" ("id") DEFERRABLE INITIALLY DEFERRED
+        );
 
-const deleteList = (
-  db: SQLite.WebSQLDatabase,
-  listId: string,
-  callback: () => void,
-  errorCallback: () => void
-) => {
-  db.transaction((tx) => {
-    tx.executeSql(
-      "DELETE FROM list WHERE id = ?;",
-      [listId],
-      (_, data) => callback(),
-      (_, { message }) => {
-        errorCallback();
+        -- Indexes
+        CREATE INDEX "task_title_d5052207" ON "task" ("title");
+        CREATE INDEX "task_list_id_4feb75db" ON "task" ("list_id");
+        CREATE INDEX "task_user_id_270d0bb2" ON "task" ("user_id");`,
+        [],
+        () => console.log("Database initialization complete"),
+        (_, { message }) => {
+          console.log(message);
 
-        console.log(`Error: ${message}`);
-
-        return true;
-      }
-    );
-  });
-};
-
-// Task table
-const createTask = (
-  db: SQLite.WebSQLDatabase,
-  task: {
-    title: string;
-    description: string;
-    starred: boolean;
-    listId: string;
+          // Rollback
+          return true;
+        }
+      );
+    });
   },
-  callback: () => void,
-  errorCallback: () => void
-) => {
-  db.transaction((tx) => {
-    tx.executeSql(
-      "INSERT INTO task (title, description, starred, list_id) values (?, ?, ?, ?)",
-      [
-        task.title,
-        task.description,
-        task.starred ? "TRUE" : "FALSE",
-        task.listId,
-      ],
-      (_, data) => callback(),
-      (_, { message }) => {
-        errorCallback();
+  List: {
+    objects: (
+      db: SQLite.WebSQLDatabase,
+      callback: (data: ListType[]) => void,
+      errorCallback: (message: string) => void
+    ) => {
+      db.transaction((tx) => {
+        tx.executeSql(
+          "SELECT * FROM list;",
+          [],
+          (_, { rows }) => callback(rows._array),
+          (_, { message }) => {
+            // Display error message
+            console.log(message);
+            errorCallback(message);
 
-        console.log(`Error: ${message}`);
+            // Rollback
+            return true;
+          }
+        );
+      });
+    },
+    create: (
+      db: SQLite.WebSQLDatabase,
+      data: {
+        name: string;
+        description: string;
+      },
+      callback: () => void,
+      errorCallback: (message: string) => void
+    ) => {
+      db.transaction((tx) => {
+        tx.executeSql(
+          "INSERT INTO list(name, description) VALUES (?, ?);",
+          [data.name, data.description],
+          () => callback(),
+          (_, { message }) => {
+            // Display error message
+            console.log(message);
+            errorCallback(message);
 
-        return true;
-      }
-    );
-  });
-};
+            // Rollback
+            return true;
+          }
+        );
+      });
+    },
+    update: (
+      db: SQLite.WebSQLDatabase,
+      data: {
+        id: string;
+        name: string;
+        description: string;
+      },
+      callback: () => void,
+      errorCallback: (message: string) => void
+    ) => {
+      db.transaction((tx) => {
+        tx.executeSql(
+          "UPDATE list SET name = ?, description = ? WHERE id = ?;",
+          [data.name, data.description, data.id],
+          () => callback(),
+          (_, { message }) => {
+            // Display error message
+            console.log(message);
+            errorCallback(message);
 
-const updateTask = (
-  db: SQLite.WebSQLDatabase,
-  task: {
-    id: string;
-    title: string;
-    description: string;
-    starred: boolean;
-    completed: boolean;
+            // Rollback
+            return true;
+          }
+        );
+      });
+    },
+    delete: (
+      db: SQLite.WebSQLDatabase,
+      id: string,
+      callback: () => void,
+      errorCallback: (message: string) => void
+    ) => {
+      db.transaction((tx) => {
+        tx.executeSql(
+          "DELETE FROM list WHERE id = ?;",
+          [id],
+          () => callback(),
+          (_, { message }) => {
+            // Display error message
+            console.log(message);
+            errorCallback(message);
+
+            // Rollback
+            return true;
+          }
+        );
+      });
+    },
   },
-  callback: () => void,
-  errorCallback: () => void
-) => {
-  db.transaction((tx) => {
-    tx.executeSql(
-      "UPDATE task SET title = ?, description = ?, completed = ?, starred = ? WHERE id = ?;",
-      [
-        task.title,
-        task.description,
-        task.completed ? "TRUE" : "FALSE",
-        task.starred ? "TRUE" : "FALSE",
-        task.id,
-      ],
-      (_, data) => callback(),
-      (_, { message }) => {
-        errorCallback();
+  Task: {
+    objects: (
+      db: SQLite.WebSQLDatabase,
+      id: string,
+      callback: (data: ListType[]) => void,
+      errorCallback: (message: string) => void
+    ) => {
+      db.transaction((tx) => {
+        tx.executeSql(
+          "SELECT * FROM task WHERE list_id = ?",
+          [id],
+          (_, { rows }) => callback(rows._array),
+          (_, { message }) => {
+            // Display error message
+            console.log(message);
+            errorCallback(message);
 
-        console.log(`Error: ${message}`);
+            // Rollback
+            return true;
+          }
+        );
+      });
+    },
+    create: (
+      db: SQLite.WebSQLDatabase,
+      data: {
+        id: string;
+        title: string;
+        description: string;
+        starred: 0 | 1;
+        completed: 0 | 1;
+        deadline?: string;
+      },
+      callback: () => void,
+      errorCallback: (message: string) => void
+    ) => {
+      db.transaction((tx) => {
+        tx.executeSql(
+          `INSERT INTO task(
+            title,
+            description,
+            starred,
+            completed,
+            deadline,
+            list_id
+          ) VALUES (?, ?, ?, ?, ?, ?);`,
+          [
+            data.title,
+            data.description,
+            data.starred,
+            data.completed,
+            data.deadline === undefined ? null : data.deadline,
+            data.id,
+          ],
+          () => callback(),
+          (_, { message }) => {
+            // Display error message
+            console.log(message);
+            errorCallback(message);
 
-        return true;
-      }
-    );
-  });
+            // Rollback
+            return true;
+          }
+        );
+      });
+    },
+    update: (
+      db: SQLite.WebSQLDatabase,
+      data: {
+        id: string;
+        title: string;
+        description: string;
+        starred: 0 | 1;
+        completed: 0 | 1;
+        deadline?: string;
+      },
+      callback: () => void,
+      errorCallback: (message: string) => void
+    ) => {
+      db.transaction((tx) => {
+        tx.executeSql(
+          `UPDATE task SET
+            title = ?,
+            description = ?,
+            starred = ?,
+            completed = ?,
+            deadline = ?
+          WHERE id = ?;`,
+          [
+            data.title,
+            data.description,
+            data.starred,
+            data.completed,
+            data.deadline === undefined ? null : data.deadline,
+            data.id,
+          ],
+          () => callback(),
+          (_, { message }) => {
+            // Display error message
+            console.log(message);
+            errorCallback(message);
+
+            // Rollback
+            return true;
+          }
+        );
+      });
+    },
+    star: (
+      db: SQLite.WebSQLDatabase,
+      value: 0 | 1,
+      callback: () => void,
+      errorCallback: (message: string) => void
+    ) => {
+      db.transaction((tx) => {
+        tx.executeSql(
+          "UPDATE task SET starred = ? WHERE id = ?;",
+          [value],
+          () => callback(),
+          (_, { message }) => {
+            // Display error message
+            console.log(message);
+            errorCallback(message);
+
+            // Rollback
+            return true;
+          }
+        );
+      });
+    },
+    complete: (
+      db: SQLite.WebSQLDatabase,
+      value: 0 | 1,
+      callback: () => void,
+      errorCallback: (message: string) => void
+    ) => {
+      db.transaction((tx) => {
+        tx.executeSql(
+          "UPDATE task SET completed = ? WHERE id = ?;",
+          [value],
+          () => callback(),
+          (_, { message }) => {
+            // Display error message
+            console.log(message);
+            errorCallback(message);
+
+            // Rollback
+            return true;
+          }
+        );
+      });
+    },
+    delete: (
+      db: SQLite.WebSQLDatabase,
+      id: string,
+      callback: () => void,
+      errorCallback: (message: string) => void
+    ) => {
+      db.transaction((tx) => {
+        tx.executeSql(
+          "DELETE FROM task WHERE id = ?;",
+          [id],
+          () => callback(),
+          (_, { message }) => {
+            // Display error message
+            console.log(message);
+            errorCallback(message);
+
+            // Rollback
+            return true;
+          }
+        );
+      });
+    },
+  },
 };
 
-const deleteTask = (
-  db: SQLite.WebSQLDatabase,
-  taskId: string,
-  callback: () => void,
-  errorCallback: () => void
-) => {
-  db.transaction((tx) => {
-    tx.executeSql(
-      "DELETE FROM task WHERE id = ?;",
-      [taskId],
-      (_, data) => callback(),
-      (_, { message }) => {
-        errorCallback();
-
-        console.log(`Error: ${message}`);
-
-        return true;
-      }
-    );
-  });
-};
-
-// Star or un-start a task
-const starTask = (
-  db: SQLite.WebSQLDatabase,
-  task: { id: string; starred: boolean },
-  callback: () => void,
-  errorCallback: () => void
-) => {
-  db.transaction((tx) => {
-    tx.executeSql(
-      "UPDATE task SET starred = ? WHERE id = ?",
-      [task.starred ? "TRUE" : "FALSE", task.id],
-      (_, data) => callback(),
-      (_, { message }) => {
-        errorCallback();
-
-        console.log(`Error: ${message}`);
-
-        return true;
-      }
-    );
-  });
-};
-
-// Mark a task completed or uncompleted
-const checkTask = (
-  db: SQLite.WebSQLDatabase,
-  task: { id: string; completed: boolean },
-  callback: () => void,
-  errorCallback: () => void
-) => {
-  db.transaction((tx) => {
-    tx.executeSql(
-      "UPDATE task SET completed = ? WHERE id = ?",
-      [task.completed ? "TRUE" : "FALSE", task.id],
-      (_, data) => callback(),
-      (_, { message }) => {
-        errorCallback();
-
-        console.log(`Error: ${message}`);
-
-        return true;
-      }
-    );
-  });
-};
-
-export {
-  createList,
-  updateList,
-  deleteList,
-  createTask,
-  updateTask,
-  deleteTask,
-  starTask,
-  checkTask,
-};
+export default Database;

@@ -6,6 +6,7 @@ import { MD3LightTheme } from "react-native-paper";
 
 const PinkTheme = {
   ...MD3LightTheme,
+  roundness: 10,
   colors: {
     primary: "rgb(186, 0, 96)",
     onPrimary: "rgb(255, 255, 255)",
@@ -52,6 +53,7 @@ const PinkTheme = {
 
 const RedTheme = {
   ...MD3LightTheme,
+  roundness: 10,
   colors: {
     primary: "rgb(191, 7, 21)",
     onPrimary: "rgb(255, 255, 255)",
@@ -98,6 +100,7 @@ const RedTheme = {
 
 const GreenTheme = {
   ...MD3LightTheme,
+  roundness: 10,
   colors: {
     primary: "rgb(0, 110, 47)",
     onPrimary: "rgb(255, 255, 255)",
@@ -144,6 +147,7 @@ const GreenTheme = {
 
 const BlueTheme = {
   ...MD3LightTheme,
+  roundness: 10,
   colors: {
     primary: "rgb(33, 81, 218)",
     onPrimary: "rgb(255, 255, 255)",
@@ -190,6 +194,7 @@ const BlueTheme = {
 
 const YellowTheme = {
   ...MD3LightTheme,
+  roundness: 10,
   colors: {
     primary: "rgb(121, 89, 0)",
     onPrimary: "rgb(255, 255, 255)",
@@ -235,7 +240,7 @@ const YellowTheme = {
 };
 
 const lightTheme = {
-  purple: MD3LightTheme,
+  purple: { ...MD3LightTheme, roundness: 10 },
   pink: PinkTheme,
   red: RedTheme,
   green: GreenTheme,

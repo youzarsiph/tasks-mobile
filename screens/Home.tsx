@@ -7,145 +7,87 @@ import * as SQLite from "expo-sqlite";
 import { useRouter } from "expo-router";
 import { FlashList } from "@shopify/flash-list";
 import { RefreshControl, View } from "react-native";
-import {
-  Button,
-  FAB,
-  List,
-  Text,
-  TextInput,
-  useTheme,
-} from "react-native-paper";
+import { Button, FAB, List, Text, useTheme } from "react-native-paper";
 import Styles from "../styles";
-import { ListTypeState } from "../types";
-import { DB, ReloadContext } from "../utils";
-import { Screen, TaskList, Modal } from "../components";
+import { HomeScreenState } from "../types";
+import { NewList } from "../components/modals";
+import { Screen, TaskList } from "../components";
+import { ListAPI, ReloadContext, useAuth, useMessage } from "../utils";
 
-// Open the db
-const db = SQLite.openDatabase("tasks.db");
+// Open db
+const db = SQLite.openDatabase("taskLists.db");
 
 const Home = () => {
-  // Router
-  const router = useRouter();
-
   // Theme
   const theme = useTheme();
 
-  // State
-  const [state, setState] = React.useState<ListTypeState>({
-    loading: true,
-    lists: [],
-  });
+  // Router
+  const router = useRouter();
+
+  // Auth token
+  const { token } = useAuth();
 
   // Message
-  const [message, setMessage] = React.useState<string>("");
-  const [displayMessage, setDisplayMessage] = React.useState<boolean>(false);
-  const showMessage = (message: string) => {
-    setMessage(message);
-    setDisplayMessage(true);
-  };
-
-  // New List Modal
-  const [displayNLModal, setDisplayNLModal] = React.useState<boolean>(false);
-
-  // Refresh data
-  const [refreshing, setRefreshing] = React.useState(false);
+  const { showMessage } = useMessage();
 
   // Reload trigger
   const trigger = React.useContext(ReloadContext);
 
+  // Refresh data
+  const [refreshing, setRefreshing] = React.useState(false);
+
+  // State
+  const [state, setState] = React.useState<HomeScreenState>({
+    data: [],
+    loading: true,
+  });
+
+  // New List Modal
+  const [displayNLModal, setDisplayNLModal] = React.useState<boolean>(false);
+
   // Load task lists
   React.useEffect(() => {
-    db.transaction((tx) => {
-      tx.executeSql(
-        "SELECT id, name, created_at as createdAt, updated_at as updatedAt FROM list",
-        [],
-        (_, { rows }) => {
-          // Set data and hide activity indicator
-          setState({ lists: rows._array, loading: false });
-
+    (async () => {
+      await ListAPI.objects(
+        token,
+        db,
+        (data) => {
+          setState({ data: data, loading: false });
           setRefreshing(false);
         },
-        (_, { message }) => {
-          console.log(`Error: ${message}`);
-
-          return true;
+        (message) => {
+          setState({ data: [], loading: false });
+          showMessage(message);
         }
       );
-    });
-  }, [trigger.reload]);
-
-  const NewListModal = () => {
-    // List name
-    const [name, setName] = React.useState<string>("");
-
-    return (
-      <Modal
-        visible={displayNLModal}
-        onDismiss={() => setDisplayNLModal(false)}
-      >
-        <Text variant="titleLarge">Create New List</Text>
-        <TextInput
-          value={name}
-          mode="outlined"
-          label={"New List"}
-          placeholder={"Enter list name"}
-          onChangeText={(value) => setName(value)}
-          maxLength={32}
-          right={<TextInput.Affix text={`${32 - name.length}`} />}
-        />
-
-        <Button
-          mode="contained"
-          disabled={name === ""}
-          onPress={() => {
-            DB.createList(
-              db,
-              name,
-              () => {
-                // Display message, reload data and clear input
-                showMessage("List created");
-                trigger.setReload();
-                setName("");
-              },
-              () => {
-                // Display message
-                showMessage(message);
-              }
-            );
-
-            // Hide modal
-            setDisplayNLModal(false);
-          }}
-        >
-          Save
-        </Button>
-      </Modal>
-    );
-  };
+    })();
+  }, [trigger.listReload]);
 
   return (
-    <Screen
-      options={{ title: "Tasks" }}
-      loading={state.loading}
-      message={message}
-      displayMessage={displayMessage}
-      onDismissMessage={() => setDisplayMessage(false)}
-    >
+    <Screen loading={state.loading} options={{ title: "Tasks" }}>
       <View style={Styles.screen}>
-        {state.lists.length === 0 ? (
-          <View style={[Styles.fullScreen, { rowGap: 32 }]}>
-            <Text variant="displaySmall">Welcome to Tasks</Text>
-            <Text style={{ textAlign: "center", paddingHorizontal: 32 }}>
-              Start your success journey by creating a task list and adding
-              tasks
+        {state.data.length === 0 ? (
+          <View style={Styles.welcome}>
+            <Text variant="displayLarge">Tasks</Text>
+            <Text variant="titleMedium">Where your success journey starts</Text>
+            <Text variant="bodyLarge" style={Styles.lead}>
+              Start by creating a task list and adding tasks
             </Text>
+            <Button
+              mode="contained-tonal"
+              onPress={() => {
+                trigger.setListReload();
+                trigger.setTaskReload();
+              }}
+            >
+              Refresh
+            </Button>
           </View>
         ) : (
           <List.Section title="Task Lists" style={Styles.screen}>
             <FlashList
-              data={state.lists}
-              estimatedItemSize={52}
-              keyExtractor={(item) => `${item.id}`}
+              data={state.data}
+              estimatedItemSize={68}
               refreshControl={
                 <RefreshControl
                   refreshing={refreshing}
@@ -154,7 +96,7 @@ const Home = () => {
                   onRefresh={() => {
                     setRefreshing(true);
 
-                    trigger.setReload();
+                    trigger.setListReload();
                   }}
                 />
               }
@@ -164,7 +106,7 @@ const Home = () => {
                   onPress={() =>
                     router.push({
                       pathname: "tasks/",
-                      params: { id: item.id, title: item.name },
+                      params: { listId: item.id },
                     })
                   }
                 />
@@ -174,14 +116,23 @@ const Home = () => {
         )}
 
         <FAB
-          mode="flat"
           icon="plus"
-          size="medium"
+          style={Styles.fab}
           onPress={() => setDisplayNLModal(true)}
-          style={{ position: "absolute", right: 16, bottom: 16 }}
         />
 
-        <NewListModal />
+        <NewList
+          token={token}
+          db={db}
+          visible={displayNLModal}
+          onDismiss={() => setDisplayNLModal(false)}
+          errorCallback={(message) => showMessage(message)}
+          callback={() => {
+            // Display message, reload data and clear input
+            showMessage("List created");
+            trigger.setListReload();
+          }}
+        />
       </View>
     </Screen>
   );
