@@ -1,70 +1,108 @@
-/**
- * Layout
- */
+import { useEffect } from "react";
+import { useFonts } from "expo-font";
+import { useColorScheme } from "react-native";
+import { SplashScreen, Stack } from "expo-router";
+import { getHeaderTitle } from "@react-navigation/elements";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import {
+  DarkTheme as NavigationDarkTheme,
+  DefaultTheme as NavigationDefaultTheme,
+} from "@react-navigation/native";
+import {
+  PaperProvider,
+  adaptNavigationTheme,
+  MD3LightTheme,
+  MD3DarkTheme,
+  Appbar,
+} from "react-native-paper";
 
-import React from "react";
-import { Provider } from "react-native-paper";
-import * as SecureStore from "expo-secure-store";
-import { Stack, SplashScreen } from "expo-router";
-import { ThemeProvider } from "@react-navigation/native";
-import getTheme from "../theme";
-import { Header } from "../components";
-import { HeaderProps } from "../components/Header";
-import { AuthProvider, MessageProvider, ReloadContext } from "../utils";
+const { LightTheme, DarkTheme } = adaptNavigationTheme({
+  reactNavigationLight: NavigationDefaultTheme,
+  reactNavigationDark: NavigationDarkTheme,
+});
 
-const Layout = () => {
-  // Theme
-  const theme = getTheme();
+const CombinedDefaultTheme = {
+  ...MD3LightTheme,
+  ...LightTheme,
+  colors: {
+    ...MD3LightTheme.colors,
+    ...LightTheme.colors,
+  },
+};
+const CombinedDarkTheme = {
+  ...MD3DarkTheme,
+  ...DarkTheme,
+  colors: {
+    ...MD3DarkTheme.colors,
+    ...DarkTheme.colors,
+  },
+};
 
-  // User auth token
-  const [token, setToken] = React.useState<string>("");
+export {
+  // Catch any errors thrown by the Layout component.
+  ErrorBoundary,
+} from "expo-router";
 
-  // Reload trigger
-  const [listReload, setListReload] = React.useState<boolean>(false);
-  const [taskReload, setTaskReload] = React.useState<boolean>(false);
+export const unstable_settings = {
+  // Ensure that reloading on `/modal` keeps a back button present.
+  initialRouteName: "(tabs)",
+};
 
-  const [themeLoaded, setThemeLoaded] = React.useState<boolean>(false);
+// Prevent the splash screen from auto-hiding before asset loading is complete.
+SplashScreen.preventAutoHideAsync();
 
-  React.useEffect(() => {
-    (async () => {
-      const token = await SecureStore.getItemAsync("token");
-      setToken(token || "");
+const RootLayout = () => {
+  const [loaded, error] = useFonts({
+    SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
+    ...MaterialCommunityIcons.font,
+  });
 
-      // Display the splash screen while loading theme
-      setTimeout(() => {
-        setThemeLoaded(true);
-      }, 150);
-    })();
-  }, []);
+  // Expo Router uses Error Boundaries to catch errors in the navigation tree.
+  useEffect(() => {
+    if (error) throw error;
+  }, [error]);
 
-  if (!themeLoaded) {
-    return <SplashScreen />;
+  useEffect(() => {
+    if (loaded) {
+      SplashScreen.hideAsync();
+    }
+  }, [loaded]);
+
+  if (!loaded) {
+    return null;
   }
 
+  return <RootLayoutNav />;
+};
+
+const RootLayoutNav = () => {
+  const colorScheme = useColorScheme();
+
   return (
-    <Provider theme={theme}>
-      <ThemeProvider value={theme}>
-        <ReloadContext.Provider
-          value={{
-            listReload: listReload,
-            setListReload: () => setListReload(!listReload),
-            taskReload: taskReload,
-            setTaskReload: () => setTaskReload(!taskReload),
-          }}
-        >
-          <AuthProvider token={token}>
-            <MessageProvider>
-              <Stack
-                screenOptions={{
-                  header: (props: HeaderProps) => <Header {...props} />,
-                }}
-              />
-            </MessageProvider>
-          </AuthProvider>
-        </ReloadContext.Provider>
-      </ThemeProvider>
-    </Provider>
+    <PaperProvider
+      theme={colorScheme === "light" ? CombinedDefaultTheme : CombinedDarkTheme}
+    >
+      <Stack
+        screenOptions={{
+          header: (props) => {
+            const title = getHeaderTitle(props.options, props.route.name);
+
+            return (
+              <Appbar.Header>
+                {props.back ? (
+                  <Appbar.BackAction onPress={props.navigation.goBack} />
+                ) : null}
+                <Appbar.Content title={title} />
+              </Appbar.Header>
+            );
+          },
+        }}
+      >
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="modal" options={{ presentation: "modal" }} />
+      </Stack>
+    </PaperProvider>
   );
 };
 
-export default Layout;
+export default RootLayout;
