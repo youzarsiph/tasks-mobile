@@ -1,3 +1,8 @@
-import Course from "./Course";
+/**
+ * Components
+ */
 
-export { Course };
+import Header from "@/components/Header";
+import LoadingIndicator from "@/components/LoadingIndicator";
+
+export { Header, LoadingIndicator };
