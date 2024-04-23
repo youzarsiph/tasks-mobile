@@ -1,79 +1,28 @@
-import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { getHeaderTitle } from "@react-navigation/elements";
-import { Tabs, router } from "expo-router";
-import React from "react";
-import { Appbar, IconButton, Tooltip } from "react-native-paper";
+import { MaterialCommunityIcons } from '@expo/vector-icons'
+import { Tabs, router } from 'expo-router'
+import React from 'react'
+import { Appbar, Tooltip } from 'react-native-paper'
 
-import { TabBar } from "@/components";
+import { TabBar, TabsHeader } from '@/components'
+import Locales from '@/locales'
 
 const TabLayout = () => (
   <Tabs
     tabBar={(props) => <TabBar {...props} />}
     screenOptions={{
       tabBarHideOnKeyboard: true,
-      header: (props) => {
-        const title = getHeaderTitle(props.options, props.route.name);
-
-        return (
-          <Appbar.Header style={{ gap: 16, paddingHorizontal: 16 }}>
-            <Appbar.Content title={title} />
-
-            {props.options.headerRight
-              ? props.options.headerRight({})
-              : undefined}
-          </Appbar.Header>
-        );
-      },
+      header: (props) => <TabsHeader navProps={props} children={undefined} />,
     }}
   >
     <Tabs.Screen
-      name="lists"
-      options={{
-        title: "Task Lists",
-        tabBarIcon: (props) => (
-          <MaterialCommunityIcons
-            {...props}
-            size={24}
-            name={props.focused ? "view-list" : "view-list-outline"}
-          />
-        ),
-      }}
-    />
-    <Tabs.Screen
-      name="starred"
-      options={{
-        title: "Starred Tasks",
-        tabBarIcon: (props) => (
-          <MaterialCommunityIcons
-            {...props}
-            size={24}
-            name={props.focused ? "star" : "star-outline"}
-          />
-        ),
-      }}
-    />
-    <Tabs.Screen
       name="index"
       options={{
-        title: "Home",
+        title: Locales.t('titleHome'),
         tabBarIcon: (props) => (
           <MaterialCommunityIcons
             {...props}
             size={24}
-            name={props.focused ? "home" : "home-outline"}
-          />
-        ),
-      }}
-    />
-    <Tabs.Screen
-      name="profile"
-      options={{
-        title: "Profile",
-        tabBarIcon: (props) => (
-          <MaterialCommunityIcons
-            {...props}
-            size={24}
-            name={props.focused ? "account" : "account-outline"}
+            name={props.focused ? 'home' : 'home-outline'}
           />
         ),
       }}
@@ -81,25 +30,33 @@ const TabLayout = () => (
     <Tabs.Screen
       name="settings"
       options={{
-        title: "Settings",
+        title: Locales.t('titleSettings'),
         headerRight: () => (
-          <Tooltip title="Info">
-            <IconButton
-              icon="information"
-              onPress={() => router.push("/modal")}
-            />
-          </Tooltip>
+          <>
+            <Tooltip title={Locales.t('stackNav')}>
+              <Appbar.Action
+                icon="card-multiple-outline"
+                onPress={() => router.push('/modal')}
+              />
+            </Tooltip>
+            <Tooltip title={Locales.t('drawerNav')}>
+              <Appbar.Action
+                icon="gesture-swipe"
+                onPress={() => router.push('/drawer/')}
+              />
+            </Tooltip>
+          </>
         ),
         tabBarIcon: (props) => (
           <MaterialCommunityIcons
             {...props}
             size={24}
-            name={props.focused ? "cog" : "cog-outline"}
+            name={props.focused ? 'cog' : 'cog-outline'}
           />
         ),
       }}
     />
   </Tabs>
-);
+)
 
-export default TabLayout;
+export default TabLayout

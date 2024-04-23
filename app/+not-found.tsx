@@ -1,6 +1,8 @@
-import { Link, Stack } from "expo-router";
-import React from "react";
-import { Divider, Surface, Text } from "react-native-paper";
+import { Link, Stack } from 'expo-router'
+import React from 'react'
+import { Surface, Text } from 'react-native-paper'
+
+import Locales from '@/locales'
 
 const NotFound = () => (
   <Surface
@@ -8,22 +10,20 @@ const NotFound = () => (
       flex: 1,
       gap: 16,
       padding: 32,
-      alignItems: "center",
-      justifyContent: "center",
+      alignItems: 'center',
+      justifyContent: 'center',
     }}
   >
-    <Stack.Screen options={{ title: "Oops!" }} />
+    <Stack.Screen options={{ title: Locales.t('titleNotFound') }} />
 
-    <Text variant="displayLarge">Not Found</Text>
+    <Text variant="displayLarge">{Locales.t('titleNotFound')}</Text>
 
-    <Divider />
-
-    <Text variant="bodyLarge">This screen doesn't exist.</Text>
+    <Text variant="bodyLarge">{Locales.t('screen404')}</Text>
 
     <Link href="/">
-      <Text variant="bodyLarge">Go to home screen!</Text>
+      <Text variant="bodyLarge">{Locales.t('goHome')}</Text>
     </Link>
   </Surface>
-);
+)
 
-export default NotFound;
+export default NotFound
